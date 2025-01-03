@@ -105,7 +105,7 @@ export function Popup() {
             type="text"
             value={newTodo}
             onChange={(e) => setNewTodo(e.target.value)}
-            className="flex-1 px-3 py-2 border rounded-md bg-white text-black placeholder-gray-500"
+            className="flex-1 px-3 py-2 border rounded-md bg-white text-gray-900 placeholder-gray-500"
             placeholder="What needs to be done?"
             autoFocus
             onKeyPress={(e) => {
@@ -145,7 +145,7 @@ export function Popup() {
                     type="text"
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
-                    className="flex-1 px-2 py-1 border rounded text-black bg-white min-w-0"
+                    className="flex-1 px-2 py-1 border rounded text-gray-900 bg-white min-w-0"
                     autoFocus
                     onKeyPress={(e) => {
                       if (e.key === "Enter") {
