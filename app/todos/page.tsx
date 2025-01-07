@@ -88,13 +88,21 @@ export default function TodosPage() {
   const addTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      if (!formData.title.trim()) {
+        throw new Error("Title is required");
+      }
+
       const response = await fetch("/api/todos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) throw new Error("Failed to create todo");
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to create todo");
+      }
+
       const newTodo = await response.json();
       setTodos((prev) => [...prev, newTodo]);
       setIsAddModalOpen(false);
@@ -103,6 +111,7 @@ export default function TodosPage() {
       });
     } catch (error) {
       console.error("Error creating todo:", error);
+      alert(error instanceof Error ? error.message : "Failed to create todo");
     }
   };
 

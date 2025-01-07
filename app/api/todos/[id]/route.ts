@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const session = (await getServerSession(authOptions)) as Session;
@@ -24,7 +24,7 @@ export async function PATCH(
     }
 
     const { completed } = await request.json();
-    const todoId = params.id;
+    const { id: todoId } = await context.params;
 
     const todo = await prisma.todo.findUnique({
       where: { id: todoId },
@@ -52,7 +52,7 @@ export async function PATCH(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const session = (await getServerSession(authOptions)) as Session;
@@ -69,8 +69,8 @@ export async function PUT(
       return new NextResponse("User not found", { status: 404 });
     }
 
-    const { title, description, dueDate } = await request.json();
-    const todoId = params.id;
+    const { title } = await request.json();
+    const { id: todoId } = await context.params;
 
     const todo = await prisma.todo.findUnique({
       where: { id: todoId },
@@ -88,8 +88,6 @@ export async function PUT(
       where: { id: todoId },
       data: {
         title,
-        description,
-        dueDate,
       },
     });
 
@@ -102,7 +100,7 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const session = (await getServerSession(authOptions)) as Session;
@@ -119,7 +117,7 @@ export async function DELETE(
       return new NextResponse("User not found", { status: 404 });
     }
 
-    const todoId = params.id;
+    const { id: todoId } = await context.params;
 
     const todo = await prisma.todo.findUnique({
       where: { id: todoId },

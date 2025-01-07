@@ -49,9 +49,13 @@ export async function POST(request: Request) {
 
     const { title } = await request.json();
 
+    if (!title || typeof title !== "string" || title.trim() === "") {
+      return new NextResponse("Title is required", { status: 400 });
+    }
+
     const todo = await prisma.todo.create({
       data: {
-        title,
+        title: title.trim(),
         userId: user.id,
       },
     });
@@ -59,7 +63,9 @@ export async function POST(request: Request) {
     return NextResponse.json(todo);
   } catch (error) {
     console.error("Error creating todo:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal Server Error";
+    return new NextResponse(errorMessage, { status: 500 });
   }
 }
 
