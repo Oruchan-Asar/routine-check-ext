@@ -74,6 +74,7 @@ export default function SignupPage() {
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
+              autoComplete="email"
             />
             <input
               type="password"
@@ -83,6 +84,7 @@ export default function SignupPage() {
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
+              autoComplete="new-password"
             />
           </div>
           <div className="mt-6 space-y-4">

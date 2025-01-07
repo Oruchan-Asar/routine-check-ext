@@ -22,9 +22,26 @@ export async function GET() {
 
     const todos = await prisma.todo.findMany({
       where: { userId: user.id },
+      include: {
+        statuses: {
+          where: {
+            date: {
+              gte: new Date(new Date().setHours(0, 0, 0, 0)),
+            },
+          },
+        },
+      },
     });
 
-    return NextResponse.json(todos);
+    const transformedTodos = todos.map((todo) => ({
+      id: todo.id,
+      title: todo.title,
+      completed: todo.statuses[0]?.completed ?? false,
+      createdAt: todo.createdAt,
+      updatedAt: todo.updatedAt,
+    }));
+
+    return NextResponse.json(transformedTodos);
   } catch (error) {
     console.error("Error fetching todos:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
@@ -57,10 +74,25 @@ export async function POST(request: Request) {
       data: {
         title: title.trim(),
         userId: user.id,
+        statuses: {
+          create: {
+            date: new Date(new Date().setHours(0, 0, 0, 0)),
+            completed: false,
+          },
+        },
+      },
+      include: {
+        statuses: true,
       },
     });
 
-    return NextResponse.json(todo);
+    return NextResponse.json({
+      id: todo.id,
+      title: todo.title,
+      completed: todo.statuses[0]?.completed ?? false,
+      createdAt: todo.createdAt,
+      updatedAt: todo.updatedAt,
+    });
   } catch (error) {
     console.error("Error creating todo:", error);
     const errorMessage =

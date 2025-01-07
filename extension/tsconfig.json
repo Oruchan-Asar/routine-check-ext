@@ -10,7 +10,7 @@
     "rootDir": ".",
     "moduleResolution": "node",
     "jsx": "react",
-    "types": ["chrome", "react", "react-dom"]
+    "types": ["chrome", "react", "react-dom", "node"]
   },
   "include": ["*.ts", "popup/**/*.ts", "popup/**/*.tsx"]
 }

@@ -1,14 +1,24 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 interface Todo {
   id: string;
   title: string;
   completed: boolean;
+  text?: string; // For local storage todos
+}
+
+interface LocalStorageTodo {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: string;
 }
 
 export default function TodosPage() {
+  const { data: session } = useSession();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -17,63 +27,200 @@ export default function TodosPage() {
     title: "",
   });
 
+  const isExtensionContext = () => {
+    return typeof chrome !== "undefined" && chrome.storage && chrome.runtime;
+  };
+
+  const getFromLocalStorage = async (): Promise<LocalStorageTodo[]> => {
+    if (isExtensionContext()) {
+      return new Promise((resolve) => {
+        chrome.storage.local.get(["currentTodos"], (result) => {
+          console.log(
+            "Todos from Chrome Extension Storage:",
+            result.currentTodos || []
+          );
+          resolve(result.currentTodos || []);
+        });
+      });
+    } else {
+      const storedTodos = window.localStorage.getItem("currentTodos");
+      const todos = storedTodos ? JSON.parse(storedTodos) : [];
+      console.log("Todos from Website Local Storage:", todos);
+      return todos;
+    }
+  };
+
+  const saveToLocalStorage = (todos: LocalStorageTodo[]) => {
+    if (isExtensionContext()) {
+      console.log("Saving to Chrome Extension Storage:", todos);
+      chrome.storage.local.set({ currentTodos: todos });
+    } else {
+      console.log("Saving to Website Local Storage:", todos);
+      window.localStorage.setItem("currentTodos", JSON.stringify(todos));
+    }
+  };
+
   useEffect(() => {
     const fetchTodos = async () => {
       try {
-        console.log("Attempting to fetch todos...");
-        const response = await fetch("/api/todos");
-        console.log("Response status:", response.status);
-        console.log(
-          "Response headers:",
-          Object.fromEntries(response.headers.entries())
-        );
+        if (session?.user) {
+          // Fetch todos from API if authenticated
+          const response = await fetch("/api/todos");
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch todos: ${response.status} ${response.statusText}`
+            );
+          }
+          const dbTodos = await response.json();
+          console.log("Todos from Database:", dbTodos);
+          setTodos(dbTodos);
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("Server response:", {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText,
-          });
-          throw new Error(
-            `Failed to fetch todos: ${response.status} ${response.statusText} - ${errorText}`
-          );
-        }
-
-        const data = await response.json();
-        console.log("Successfully fetched todos:", data);
-        setTodos(data);
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error("Detailed error information:", {
-            message: error.message,
-            stack: error.stack,
-            name: error.name,
-          });
+          // Check for local storage todos and sync them
+          let localTodos = [];
+          if (isExtensionContext()) {
+            // Try Chrome storage first (for extension)
+            chrome.storage.local.get(["currentTodos"], async (result) => {
+              localTodos = result.currentTodos || [];
+              console.log(
+                "Found todos in Chrome Extension Storage:",
+                localTodos
+              );
+              handleLocalTodosSync(localTodos, dbTodos);
+            });
+          } else {
+            // Use window.localStorage (for website)
+            try {
+              const storedTodos = window.localStorage.getItem("currentTodos");
+              localTodos = storedTodos ? JSON.parse(storedTodos) : [];
+              console.log("Found todos in Website Local Storage:", localTodos);
+              await handleLocalTodosSync(localTodos, dbTodos);
+            } catch (error) {
+              console.error("Error reading from localStorage:", error);
+            }
+          }
         } else {
-          console.error("Unknown error occurred:", error);
+          // Fetch todos from storage if not authenticated
+          let localTodos = [];
+          if (isExtensionContext()) {
+            // Try Chrome storage first (for extension)
+            chrome.storage.local.get(["currentTodos"], (result) => {
+              localTodos = result.currentTodos || [];
+              console.log(
+                "Loading todos from Chrome Extension (not authenticated):",
+                localTodos
+              );
+              const formattedTodos = formatLocalTodos(localTodos);
+              setTodos(formattedTodos);
+            });
+          } else {
+            // Use window.localStorage (for website)
+            try {
+              const storedTodos = window.localStorage.getItem("currentTodos");
+              localTodos = storedTodos ? JSON.parse(storedTodos) : [];
+              console.log(
+                "Loading todos from Website Storage (not authenticated):",
+                localTodos
+              );
+              const formattedTodos = formatLocalTodos(localTodos);
+              setTodos(formattedTodos);
+            } catch (error) {
+              console.error("Error reading from localStorage:", error);
+              setTodos([]);
+            }
+          }
         }
-        // Re-throw to maintain existing error handling
-        throw error;
+      } catch (error) {
+        console.error("Error fetching todos:", error);
       } finally {
         setLoading(false);
       }
     };
 
+    // Helper function to format local todos to DB format
+    const formatLocalTodos = (localTodos: LocalStorageTodo[]) => {
+      return localTodos.map((todo) => ({
+        id: todo.id,
+        title: todo.text,
+        completed: todo.completed,
+      }));
+    };
+
+    // Helper function to handle syncing local todos to DB
+    const handleLocalTodosSync = async (
+      localTodos: LocalStorageTodo[],
+      dbTodos: Todo[]
+    ) => {
+      if (localTodos.length > 0) {
+        console.log("Found local todos to sync:", localTodos.length);
+        // Add local todos to DB if they don't exist
+        for (const localTodo of localTodos) {
+          const todoExists = dbTodos.some(
+            (dbTodo) =>
+              dbTodo.title === localTodo.text &&
+              dbTodo.completed === localTodo.completed
+          );
+
+          console.log(`Todo "${localTodo.text}" exists in DB:`, todoExists);
+
+          if (!todoExists) {
+            try {
+              console.log("Syncing todo to DB:", localTodo);
+              await fetch("/api/todos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  title: localTodo.text,
+                  completed: localTodo.completed,
+                }),
+              });
+            } catch (error) {
+              console.error("Error syncing local todo to DB:", error);
+            }
+          }
+        }
+
+        // Clear local storage after syncing
+        console.log("Clearing local storage after sync");
+        if (isExtensionContext()) {
+          chrome.storage.local.set({ currentTodos: [] });
+        } else {
+          window.localStorage.setItem("currentTodos", JSON.stringify([]));
+        }
+
+        // Refresh todos from DB
+        const refreshResponse = await fetch("/api/todos");
+        if (refreshResponse.ok) {
+          const refreshedTodos = await refreshResponse.json();
+          console.log("Refreshed DB todos after sync:", refreshedTodos);
+          setTodos(refreshedTodos);
+        }
+      }
+    };
+
     fetchTodos();
-  }, []);
+  }, [session]);
 
   const toggleTodo = async (id: string) => {
     try {
-      const response = await fetch(`/api/todos/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          completed: !todos.find((t) => t.id === id)?.completed,
-        }),
-      });
+      if (session?.user) {
+        // Update in DB if authenticated
+        const response = await fetch(`/api/todos/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            completed: !todos.find((t) => t.id === id)?.completed,
+          }),
+        });
 
-      if (!response.ok) throw new Error("Failed to update todo");
+        if (!response.ok) throw new Error("Failed to update todo");
+      } else {
+        // Update in local storage if not authenticated
+        const localTodos = await getFromLocalStorage();
+        const updatedTodos = localTodos.map((todo) =>
+          todo.id === id ? { ...todo, completed: !todo.completed } : todo
+        );
+        saveToLocalStorage(updatedTodos);
+      }
 
       setTodos((prevTodos) =>
         prevTodos.map((todo) =>
@@ -92,26 +239,73 @@ export default function TodosPage() {
         throw new Error("Title is required");
       }
 
-      const response = await fetch("/api/todos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      if (session?.user) {
+        // Add to DB if authenticated
+        const response = await fetch("/api/todos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to create todo");
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Failed to create todo");
+        }
+
+        const newTodo = await response.json();
+        setTodos((prev) => [...prev, newTodo]);
+      } else {
+        // Add to local storage if not authenticated
+        const newTodo = {
+          id: Date.now().toString(),
+          text: formData.title,
+          completed: false,
+          createdAt: new Date().toISOString(),
+        };
+
+        const currentTodos = await getFromLocalStorage();
+        const updatedTodos = [...currentTodos, newTodo];
+        saveToLocalStorage(updatedTodos);
+
+        setTodos((prev) => [
+          ...prev,
+          {
+            id: newTodo.id,
+            title: newTodo.text,
+            completed: newTodo.completed,
+          },
+        ]);
       }
 
-      const newTodo = await response.json();
-      setTodos((prev) => [...prev, newTodo]);
       setIsAddModalOpen(false);
-      setFormData({
-        title: "",
-      });
+      setFormData({ title: "" });
     } catch (error) {
       console.error("Error creating todo:", error);
       alert(error instanceof Error ? error.message : "Failed to create todo");
+    }
+  };
+
+  const deleteTodo = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this todo?")) return;
+
+    try {
+      if (session?.user) {
+        // Delete from DB if authenticated
+        const response = await fetch(`/api/todos/${id}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) throw new Error("Failed to delete todo");
+      } else {
+        // Delete from local storage if not authenticated
+        const localTodos = await getFromLocalStorage();
+        const updatedTodos = localTodos.filter((todo) => todo.id !== id);
+        saveToLocalStorage(updatedTodos);
+      }
+
+      setTodos((prev) => prev.filter((todo) => todo.id !== id));
+    } catch (error) {
+      console.error("Error deleting todo:", error);
     }
   };
 
@@ -120,38 +314,40 @@ export default function TodosPage() {
     if (!editingTodo) return;
 
     try {
-      const response = await fetch(`/api/todos/${editingTodo.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      if (session?.user) {
+        // Update in DB if authenticated
+        const response = await fetch(`/api/todos/${editingTodo.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
 
-      if (!response.ok) throw new Error("Failed to update todo");
-      const updatedTodo = await response.json();
-      setTodos((prev) =>
-        prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo))
-      );
+        if (!response.ok) throw new Error("Failed to update todo");
+        const updatedTodo = await response.json();
+        setTodos((prev) =>
+          prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo))
+        );
+      } else {
+        // Update in local storage if not authenticated
+        const localTodos = await getFromLocalStorage();
+        const updatedTodos = localTodos.map((todo) =>
+          todo.id === editingTodo.id ? { ...todo, text: formData.title } : todo
+        );
+        saveToLocalStorage(updatedTodos);
+
+        setTodos((prev) =>
+          prev.map((todo) =>
+            todo.id === editingTodo.id
+              ? { ...todo, title: formData.title }
+              : todo
+          )
+        );
+      }
+
       setEditingTodo(null);
-      setFormData({
-        title: "",
-      });
+      setFormData({ title: "" });
     } catch (error) {
       console.error("Error updating todo:", error);
-    }
-  };
-
-  const deleteTodo = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this todo?")) return;
-
-    try {
-      const response = await fetch(`/api/todos/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) throw new Error("Failed to delete todo");
-      setTodos((prev) => prev.filter((todo) => todo.id !== id));
-    } catch (error) {
-      console.error("Error deleting todo:", error);
     }
   };
 

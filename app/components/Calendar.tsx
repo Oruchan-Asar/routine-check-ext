@@ -9,8 +9,10 @@ import { useRouter } from "next/navigation";
 interface Todo {
   id: string;
   title: string;
-  dueDate: string;
-  completed: boolean;
+  statuses: {
+    date: string;
+    completed: boolean;
+  }[];
 }
 
 interface CalendarEvent {
@@ -37,7 +39,7 @@ export default function Calendar() {
 
     const fetchTodos = async () => {
       try {
-        const response = await fetch("/api/todos", {
+        const response = await fetch("/api/todos/calendar", {
           headers: {
             "x-user-email": session.user?.email || "",
           },
@@ -54,14 +56,16 @@ export default function Calendar() {
         const todos: Todo[] = await response.json();
 
         // Convert todos to calendar events
-        const calendarEvents = todos
-          .filter((todo) => !todo.completed)
-          .map((todo) => ({
-            title: todo.title,
-            date: new Date(todo.dueDate).toISOString().split("T")[0],
-            backgroundColor: "#ef4444", // Red color for unchecked todos
-            borderColor: "#ef4444",
-          }));
+        const calendarEvents = todos.flatMap((todo) =>
+          todo.statuses
+            .filter((status) => !status.completed)
+            .map((status) => ({
+              title: todo.title,
+              date: status.date,
+              backgroundColor: "#ef4444", // Red color for unchecked todos
+              borderColor: "#ef4444",
+            }))
+        );
 
         setEvents(calendarEvents);
       } catch (error) {

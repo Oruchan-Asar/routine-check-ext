@@ -25,6 +25,11 @@ export function Popup() {
   useEffect(() => {
     // Load todos and history from storage
     chrome.storage.local.get(["currentTodos", "todoHistory"], (result) => {
+      console.log(
+        "Extension Popup - Current Todos:",
+        result.currentTodos || []
+      );
+      console.log("Extension Popup - Todo History:", result.todoHistory || {});
       setTodos(result.currentTodos || []);
       setTodoHistory(result.todoHistory || {});
     });
@@ -35,9 +40,12 @@ export function Popup() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/auth/check", {
-        credentials: "include",
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/check`,
+        {
+          credentials: "include",
+        }
+      );
       setIsAuthenticated(response.ok);
     } catch (error) {
       console.error("Error checking auth status:", error);
@@ -56,13 +64,14 @@ export function Popup() {
     };
 
     const updatedTodos = [...todos, todo];
-    chrome.storage.local.set({ currentTodos: updatedTodos });
+    console.log("Extension Popup - Adding Todo:", todo);
+    console.log("Extension Popup - Updated Todos List:", updatedTodos);
     setTodos(updatedTodos);
 
-    // If user is authenticated, also save to database
     if (isAuthenticated) {
       try {
-        await fetch("http://localhost:3000/api/todos", {
+        console.log("Extension Popup - Saving Todo to DB:", todo);
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/todos`, {
           method: "POST",
           credentials: "include",
           headers: {
@@ -72,12 +81,18 @@ export function Popup() {
             title: todo.text,
             description: "",
             completed: todo.completed,
-            dueDate: new Date(), // You might want to add a due date field to your UI
+            dueDate: new Date(),
           }),
         });
       } catch (error) {
         console.error("Error saving todo to database:", error);
       }
+    } else {
+      console.log(
+        "Extension Popup - Saving Todo to Chrome Storage:",
+        updatedTodos
+      );
+      chrome.storage.local.set({ currentTodos: updatedTodos });
     }
 
     setNewTodo("");
@@ -88,12 +103,16 @@ export function Popup() {
     const updatedTodos = todos.map((todo) =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
+    console.log("Extension Popup - Toggling Todo:", id);
+    console.log("Extension Popup - Updated Todos List:", updatedTodos);
     chrome.storage.local.set({ currentTodos: updatedTodos });
     setTodos(updatedTodos);
   };
 
   const deleteTodo = (id: string) => {
     const updatedTodos = todos.filter((todo) => todo.id !== id);
+    console.log("Extension Popup - Deleting Todo:", id);
+    console.log("Extension Popup - Updated Todos List:", updatedTodos);
     chrome.storage.local.set({ currentTodos: updatedTodos });
     setTodos(updatedTodos);
   };
@@ -104,6 +123,8 @@ export function Popup() {
     const updatedTodos = todos.map((todo) =>
       todo.id === id ? { ...todo, text: newText } : todo
     );
+    console.log("Extension Popup - Editing Todo:", id);
+    console.log("Extension Popup - Updated Todos List:", updatedTodos);
     chrome.storage.local.set({ currentTodos: updatedTodos });
     setTodos(updatedTodos);
     setEditingTodo(null);
