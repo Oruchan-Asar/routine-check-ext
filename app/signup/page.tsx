@@ -3,6 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 
+interface ExtensionTodo {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: string;
+}
+
 export default function SignupPage() {
   const [formData, setFormData] = useState({
     email: "",
@@ -13,13 +20,27 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Get todos from extension's local storage if available
+      let extensionTodos: ExtensionTodo[] = [];
+      if (typeof chrome !== "undefined" && chrome.storage) {
+        const result = await chrome.storage.local.get(["currentTodos"]);
+        extensionTodos = result.currentTodos || [];
+      }
+
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          extensionTodos,
+        }),
       });
 
       if (response.ok) {
+        // Clear extension todos after successful import
+        if (typeof chrome !== "undefined" && chrome.storage) {
+          await chrome.storage.local.set({ currentTodos: [] });
+        }
         window.location.href = "/login";
       }
     } catch (error) {

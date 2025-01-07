@@ -20,6 +20,7 @@ export function Popup() {
   const [showHistory, setShowHistory] = useState(false);
   const [editingTodo, setEditingTodo] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     // Load todos and history from storage
@@ -27,9 +28,24 @@ export function Popup() {
       setTodos(result.currentTodos || []);
       setTodoHistory(result.todoHistory || {});
     });
+
+    // Check authentication status
+    checkAuthStatus();
   }, []);
 
-  const addTodo = () => {
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/auth/check", {
+        credentials: "include",
+      });
+      setIsAuthenticated(response.ok);
+    } catch (error) {
+      console.error("Error checking auth status:", error);
+      setIsAuthenticated(false);
+    }
+  };
+
+  const addTodo = async () => {
     if (!newTodo.trim()) return;
 
     const todo: Todo = {
@@ -42,6 +58,28 @@ export function Popup() {
     const updatedTodos = [...todos, todo];
     chrome.storage.local.set({ currentTodos: updatedTodos });
     setTodos(updatedTodos);
+
+    // If user is authenticated, also save to database
+    if (isAuthenticated) {
+      try {
+        await fetch("http://localhost:3000/api/todos", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: todo.text,
+            description: "",
+            completed: todo.completed,
+            dueDate: new Date(), // You might want to add a due date field to your UI
+          }),
+        });
+      } catch (error) {
+        console.error("Error saving todo to database:", error);
+      }
+    }
+
     setNewTodo("");
     setShowInput(false);
   };

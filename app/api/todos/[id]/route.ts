@@ -4,7 +4,10 @@ import { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
-export async function GET() {
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     const session = (await getServerSession(authOptions)) as Session;
 
@@ -20,45 +23,29 @@ export async function GET() {
       return new NextResponse("User not found", { status: 404 });
     }
 
-    const todos = await prisma.todo.findMany({
-      where: { userId: user.id },
+    const { completed } = await request.json();
+    const todoId = params.id;
+
+    const todo = await prisma.todo.findUnique({
+      where: { id: todoId },
     });
 
-    return NextResponse.json(todos);
-  } catch (error) {
-    console.error("Error fetching todos:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
-  }
-}
+    if (!todo) {
+      return new NextResponse("Todo not found", { status: 404 });
+    }
 
-export async function POST(request: Request) {
-  try {
-    const session = (await getServerSession(authOptions)) as Session;
-
-    if (!session?.user?.email) {
+    if (todo.userId !== user.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const updatedTodo = await prisma.todo.update({
+      where: { id: todoId },
+      data: { completed },
     });
 
-    if (!user) {
-      return new NextResponse("User not found", { status: 404 });
-    }
-
-    const { title } = await request.json();
-
-    const todo = await prisma.todo.create({
-      data: {
-        title,
-        userId: user.id,
-      },
-    });
-
-    return NextResponse.json(todo);
+    return NextResponse.json(updatedTodo);
   } catch (error) {
-    console.error("Error creating todo:", error);
+    console.error("Error updating todo:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
@@ -82,7 +69,7 @@ export async function PUT(
       return new NextResponse("User not found", { status: 404 });
     }
 
-    const { title } = await request.json();
+    const { title, description, dueDate } = await request.json();
     const todoId = params.id;
 
     const todo = await prisma.todo.findUnique({
@@ -101,6 +88,8 @@ export async function PUT(
       where: { id: todoId },
       data: {
         title,
+        description,
+        dueDate,
       },
     });
 

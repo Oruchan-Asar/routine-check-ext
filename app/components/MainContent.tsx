@@ -33,6 +33,7 @@ export default function MainContent() {
             icon={<FaCheckCircle className="w-8 h-8" />}
             title="Task Management"
             description="Create and manage daily todo lists with ease"
+            onClick={() => router.push("/todos")}
           />
           <FeatureCard
             icon={<FaCalendarAlt className="w-8 h-8" />}
