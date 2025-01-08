@@ -1,47 +1,52 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
 
-export async function middleware(request: NextRequest) {
-  const token = request.cookies.get("next-auth.session-token");
+export function middleware(request: NextRequest) {
+  const origin = request.headers.get("origin") || "";
 
-  if (!token && request.nextUrl.pathname.startsWith("/api")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Check if the request is from your Chrome extension
+  const isExtensionRequest = origin.startsWith("chrome-extension://");
 
-  try {
-    if (token && request.nextUrl.pathname.startsWith("/api")) {
-      const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-      const { payload } = await jwtVerify(token.value, secret);
+  // Handle preflight requests
+  if (request.method === "OPTIONS") {
+    const response = new NextResponse(null, { status: 200 });
 
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set("x-user-email", payload.email as string);
-      requestHeaders.set("x-user-id", payload.sub as string);
-
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
+    if (isExtensionRequest) {
+      response.headers.set("Access-Control-Allow-Origin", origin);
+      response.headers.set(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, OPTIONS"
+      );
+      response.headers.set(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, Cookie"
+      );
+      response.headers.set("Access-Control-Allow-Credentials", "true");
+      response.headers.set("Access-Control-Max-Age", "86400"); // 24 hours
     }
-  } catch (error) {
-    console.error("Token verification failed:", error);
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+
+    return response;
   }
 
-  return NextResponse.next();
+  // Handle actual requests
+  const response = NextResponse.next();
+
+  if (isExtensionRequest) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS"
+    );
+    response.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, Cookie"
+    );
+    response.headers.set("Access-Control-Allow-Credentials", "true");
+  }
+
+  return response;
 }
 
-// See "Matching Paths" below to learn more
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: "/api/:path*",
 };

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 
 export async function PATCH(
   request: Request,
-  context: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     const session = (await getServerSession(authOptions)) as Session;
@@ -38,12 +38,26 @@ export async function PATCH(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const updatedTodo = await prisma.todo.update({
-      where: { id: todoId },
-      data: { completed },
+    const today = new Date(new Date().setHours(0, 0, 0, 0));
+
+    const todoStatus = await prisma.todoStatus.upsert({
+      where: {
+        todoId_date: {
+          todoId,
+          date: today,
+        },
+      },
+      update: {
+        completed,
+      },
+      create: {
+        todoId,
+        date: today,
+        completed,
+      },
     });
 
-    return NextResponse.json(updatedTodo);
+    return NextResponse.json({ ...todo, completed: todoStatus.completed });
   } catch (error) {
     console.error("Error updating todo:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
@@ -52,7 +66,7 @@ export async function PATCH(
 
 export async function PUT(
   request: Request,
-  context: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     const session = (await getServerSession(authOptions)) as Session;
@@ -100,7 +114,7 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  context: { params: Promise<{ id: string }> | { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     const session = (await getServerSession(authOptions)) as Session;
@@ -131,6 +145,12 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    // Delete related TodoStatus records first
+    await prisma.todoStatus.deleteMany({
+      where: { todoId },
+    });
+
+    // Then delete the Todo
     await prisma.todo.delete({
       where: { id: todoId },
     });

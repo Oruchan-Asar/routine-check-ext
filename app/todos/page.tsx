@@ -27,39 +27,6 @@ export default function TodosPage() {
     title: "",
   });
 
-  const isExtensionContext = () => {
-    return typeof chrome !== "undefined" && chrome.storage && chrome.runtime;
-  };
-
-  const getFromLocalStorage = async (): Promise<LocalStorageTodo[]> => {
-    if (isExtensionContext()) {
-      return new Promise((resolve) => {
-        chrome.storage.local.get(["currentTodos"], (result) => {
-          console.log(
-            "Todos from Chrome Extension Storage:",
-            result.currentTodos || []
-          );
-          resolve(result.currentTodos || []);
-        });
-      });
-    } else {
-      const storedTodos = window.localStorage.getItem("currentTodos");
-      const todos = storedTodos ? JSON.parse(storedTodos) : [];
-      console.log("Todos from Website Local Storage:", todos);
-      return todos;
-    }
-  };
-
-  const saveToLocalStorage = (todos: LocalStorageTodo[]) => {
-    if (isExtensionContext()) {
-      console.log("Saving to Chrome Extension Storage:", todos);
-      chrome.storage.local.set({ currentTodos: todos });
-    } else {
-      console.log("Saving to Website Local Storage:", todos);
-      window.localStorage.setItem("currentTodos", JSON.stringify(todos));
-    }
-  };
-
   useEffect(() => {
     const fetchTodos = async () => {
       try {
@@ -77,7 +44,7 @@ export default function TodosPage() {
 
           // Check for local storage todos and sync them
           let localTodos = [];
-          if (isExtensionContext()) {
+          if (typeof chrome !== "undefined" && chrome.storage) {
             // Try Chrome storage first (for extension)
             chrome.storage.local.get(["currentTodos"], async (result) => {
               localTodos = result.currentTodos || [];
@@ -85,7 +52,7 @@ export default function TodosPage() {
                 "Found todos in Chrome Extension Storage:",
                 localTodos
               );
-              handleLocalTodosSync(localTodos, dbTodos);
+              handleLocalTodosSync(localTodos);
             });
           } else {
             // Use window.localStorage (for website)
@@ -93,7 +60,7 @@ export default function TodosPage() {
               const storedTodos = window.localStorage.getItem("currentTodos");
               localTodos = storedTodos ? JSON.parse(storedTodos) : [];
               console.log("Found todos in Website Local Storage:", localTodos);
-              await handleLocalTodosSync(localTodos, dbTodos);
+              await handleLocalTodosSync(localTodos);
             } catch (error) {
               console.error("Error reading from localStorage:", error);
             }
@@ -101,7 +68,7 @@ export default function TodosPage() {
         } else {
           // Fetch todos from storage if not authenticated
           let localTodos = [];
-          if (isExtensionContext()) {
+          if (typeof chrome !== "undefined" && chrome.storage) {
             // Try Chrome storage first (for extension)
             chrome.storage.local.get(["currentTodos"], (result) => {
               localTodos = result.currentTodos || [];
@@ -146,26 +113,31 @@ export default function TodosPage() {
     };
 
     // Helper function to handle syncing local todos to DB
-    const handleLocalTodosSync = async (
-      localTodos: LocalStorageTodo[],
-      dbTodos: Todo[]
-    ) => {
+    const handleLocalTodosSync = async (localTodos: LocalStorageTodo[]) => {
       if (localTodos.length > 0) {
         console.log("Found local todos to sync:", localTodos.length);
-        // Add local todos to DB if they don't exist
+
+        // Process todos sequentially to avoid race conditions
         for (const localTodo of localTodos) {
-          const todoExists = dbTodos.some(
-            (dbTodo) =>
-              dbTodo.title === localTodo.text &&
-              dbTodo.completed === localTodo.completed
-          );
+          try {
+            // Get latest todos before checking for duplicates
+            const latestResponse = await fetch("/api/todos");
+            if (!latestResponse.ok) {
+              throw new Error("Failed to fetch latest todos");
+            }
+            const latestDbTodos = await latestResponse.json();
 
-          console.log(`Todo "${localTodo.text}" exists in DB:`, todoExists);
+            // Check for duplicates in the latest DB state
+            const todoExists = latestDbTodos.some(
+              (dbTodo: Todo) =>
+                dbTodo.title.toLowerCase() === localTodo.text.toLowerCase()
+            );
 
-          if (!todoExists) {
-            try {
+            console.log(`Todo "${localTodo.text}" exists in DB:`, todoExists);
+
+            if (!todoExists) {
               console.log("Syncing todo to DB:", localTodo);
-              await fetch("/api/todos", {
+              const addResponse = await fetch("/api/todos", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -173,21 +145,28 @@ export default function TodosPage() {
                   completed: localTodo.completed,
                 }),
               });
-            } catch (error) {
-              console.error("Error syncing local todo to DB:", error);
+
+              if (!addResponse.ok) {
+                throw new Error("Failed to add todo to DB");
+              }
+
+              // Wait for the todo to be added
+              await addResponse.json();
             }
+          } catch (error) {
+            console.error("Error syncing local todo to DB:", error);
           }
         }
 
         // Clear local storage after syncing
         console.log("Clearing local storage after sync");
-        if (isExtensionContext()) {
+        if (typeof chrome !== "undefined" && chrome.storage) {
           chrome.storage.local.set({ currentTodos: [] });
         } else {
           window.localStorage.setItem("currentTodos", JSON.stringify([]));
         }
 
-        // Refresh todos from DB
+        // Refresh todos from DB one final time
         const refreshResponse = await fetch("/api/todos");
         if (refreshResponse.ok) {
           const refreshedTodos = await refreshResponse.json();
@@ -199,6 +178,35 @@ export default function TodosPage() {
 
     fetchTodos();
   }, [session]);
+
+  const saveToLocalStorage = (todos: LocalStorageTodo[]) => {
+    if (typeof chrome !== "undefined" && chrome.storage) {
+      console.log("Saving to Chrome Extension Storage:", todos);
+      chrome.storage.local.set({ currentTodos: todos });
+    } else {
+      console.log("Saving to Website Local Storage:", todos);
+      window.localStorage.setItem("currentTodos", JSON.stringify(todos));
+    }
+  };
+
+  const getFromLocalStorage = async (): Promise<LocalStorageTodo[]> => {
+    if (typeof chrome !== "undefined" && chrome.storage) {
+      return new Promise((resolve) => {
+        chrome.storage.local.get(["currentTodos"], (result) => {
+          console.log(
+            "Todos from Chrome Extension Storage:",
+            result.currentTodos || []
+          );
+          resolve(result.currentTodos || []);
+        });
+      });
+    } else {
+      const storedTodos = window.localStorage.getItem("currentTodos");
+      const todos = storedTodos ? JSON.parse(storedTodos) : [];
+      console.log("Todos from Website Local Storage:", todos);
+      return todos;
+    }
+  };
 
   const toggleTodo = async (id: string) => {
     try {

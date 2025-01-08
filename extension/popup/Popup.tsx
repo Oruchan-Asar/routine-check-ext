@@ -1,11 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { FaCheck, FaTimes } from "react-icons/fa";
+import { FaCheck, FaTimes, FaSync } from "react-icons/fa";
 
 interface Todo {
   id: string;
   text: string;
   completed: boolean;
   createdAt: string;
+}
+
+interface WebAppTodo {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+  description?: string;
 }
 
 interface TodoHistory {
@@ -21,15 +29,11 @@ export function Popup() {
   const [editingTodo, setEditingTodo] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     // Load todos and history from storage
     chrome.storage.local.get(["currentTodos", "todoHistory"], (result) => {
-      console.log(
-        "Extension Popup - Current Todos:",
-        result.currentTodos || []
-      );
-      console.log("Extension Popup - Todo History:", result.todoHistory || {});
       setTodos(result.currentTodos || []);
       setTodoHistory(result.todoHistory || {});
     });
@@ -40,16 +44,110 @@ export function Popup() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/check`,
-        {
-          credentials: "include",
-        }
-      );
+      // Remove /api from the URL since it's already in NEXT_PUBLIC_API_URL
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/todos`, {
+        credentials: "include",
+      });
       setIsAuthenticated(response.ok);
     } catch (error) {
       console.error("Error checking auth status:", error);
       setIsAuthenticated(false);
+    }
+  };
+
+  const syncWithWebApp = async () => {
+    if (!isAuthenticated) {
+      // Open the login page in a new tab if not authenticated
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+      chrome.tabs.create({ url: `${apiUrl}/login` }, (tab) => {
+        // Add listener for tab updates
+        chrome.tabs.onUpdated.addListener(async function listener(tabId, info) {
+          // Check if it's our tab and it's done loading
+          if (tabId === tab.id && info.status === "complete") {
+            // Remove the listener
+            chrome.tabs.onUpdated.removeListener(listener);
+
+            // Wait a bit to ensure the session is properly set
+            setTimeout(async () => {
+              // Recheck auth status
+              await checkAuthStatus();
+              // If now authenticated, sync
+              if (isAuthenticated) {
+                await syncWithWebApp();
+              }
+            }, 1000);
+          }
+        });
+      });
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      // Get web app todos
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/todos`, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch todos from web app");
+      }
+
+      const webAppTodos = (await response.json()) as WebAppTodo[];
+
+      // Convert web app todos to extension format
+      const convertedWebAppTodos = webAppTodos.map((todo: WebAppTodo) => ({
+        id: todo.id,
+        text: todo.title,
+        completed: todo.completed,
+        createdAt: todo.createdAt || new Date().toISOString(),
+      }));
+
+      // Merge todos (prefer web app todos for duplicates)
+      const mergedTodos = [...todos];
+
+      for (const webAppTodo of convertedWebAppTodos) {
+        const existingTodoIndex = mergedTodos.findIndex(
+          (t) => t.text.toLowerCase() === webAppTodo.text.toLowerCase()
+        );
+
+        if (existingTodoIndex === -1) {
+          mergedTodos.push(webAppTodo);
+        } else {
+          mergedTodos[existingTodoIndex] = webAppTodo;
+        }
+      }
+
+      // Update local storage and state
+      chrome.storage.local.set({ currentTodos: mergedTodos }, () => {
+        setTodos(mergedTodos);
+      });
+
+      // Sync back to web app
+      for (const todo of todos) {
+        const todoExists = webAppTodos.some(
+          (webTodo: WebAppTodo) =>
+            webTodo.title.toLowerCase() === todo.text.toLowerCase()
+        );
+
+        if (!todoExists) {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/todos`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              title: todo.text,
+              completed: todo.completed,
+            }),
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error syncing with web app:", error);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -64,13 +162,10 @@ export function Popup() {
     };
 
     const updatedTodos = [...todos, todo];
-    console.log("Extension Popup - Adding Todo:", todo);
-    console.log("Extension Popup - Updated Todos List:", updatedTodos);
     setTodos(updatedTodos);
 
     if (isAuthenticated) {
       try {
-        console.log("Extension Popup - Saving Todo to DB:", todo);
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/todos`, {
           method: "POST",
           credentials: "include",
@@ -81,20 +176,14 @@ export function Popup() {
             title: todo.text,
             description: "",
             completed: todo.completed,
-            dueDate: new Date(),
           }),
         });
       } catch (error) {
         console.error("Error saving todo to database:", error);
       }
-    } else {
-      console.log(
-        "Extension Popup - Saving Todo to Chrome Storage:",
-        updatedTodos
-      );
-      chrome.storage.local.set({ currentTodos: updatedTodos });
     }
 
+    chrome.storage.local.set({ currentTodos: updatedTodos });
     setNewTodo("");
     setShowInput(false);
   };
@@ -103,16 +192,12 @@ export function Popup() {
     const updatedTodos = todos.map((todo) =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
-    console.log("Extension Popup - Toggling Todo:", id);
-    console.log("Extension Popup - Updated Todos List:", updatedTodos);
     chrome.storage.local.set({ currentTodos: updatedTodos });
     setTodos(updatedTodos);
   };
 
   const deleteTodo = (id: string) => {
     const updatedTodos = todos.filter((todo) => todo.id !== id);
-    console.log("Extension Popup - Deleting Todo:", id);
-    console.log("Extension Popup - Updated Todos List:", updatedTodos);
     chrome.storage.local.set({ currentTodos: updatedTodos });
     setTodos(updatedTodos);
   };
@@ -123,8 +208,6 @@ export function Popup() {
     const updatedTodos = todos.map((todo) =>
       todo.id === id ? { ...todo, text: newText } : todo
     );
-    console.log("Extension Popup - Editing Todo:", id);
-    console.log("Extension Popup - Updated Todos List:", updatedTodos);
     chrome.storage.local.set({ currentTodos: updatedTodos });
     setTodos(updatedTodos);
     setEditingTodo(null);
@@ -141,6 +224,16 @@ export function Popup() {
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Todo Check</h1>
         <div className="flex gap-2">
+          <button
+            onClick={syncWithWebApp}
+            className={`px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm flex items-center gap-1 ${
+              isSyncing ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={isSyncing}
+          >
+            <FaSync className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
+            Sync
+          </button>
           <button
             onClick={() => setShowHistory(!showHistory)}
             className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
