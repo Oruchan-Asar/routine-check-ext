@@ -20,6 +20,20 @@ interface TodoHistory {
   [date: string]: Todo[];
 }
 
+interface ChromeCookie {
+  name: string;
+  value: string;
+  domain: string;
+  hostOnly: boolean;
+  path: string;
+  secure: boolean;
+  httpOnly: boolean;
+  sameSite: string;
+  session: boolean;
+  expirationDate?: number;
+  storeId: string;
+}
+
 export function Popup() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [todoHistory, setTodoHistory] = useState<TodoHistory>({});
@@ -32,8 +46,13 @@ export function Popup() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
+    console.log("Authentication Status:", isAuthenticated);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     // Load todos and history from storage
     chrome.storage.local.get(["currentTodos", "todoHistory"], (result) => {
+      console.log("Local Storage Todos:", result.currentTodos || []);
       setTodos(result.currentTodos || []);
       setTodoHistory(result.todoHistory || {});
     });
@@ -44,11 +63,57 @@ export function Popup() {
 
   const checkAuthStatus = async () => {
     try {
-      // Remove /api from the URL since it's already in NEXT_PUBLIC_API_URL
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/todos`, {
-        credentials: "include",
+      // Get the next-auth.session-token cookie
+      const cookie = await new Promise<ChromeCookie | null>((resolve) => {
+        chrome.cookies.get(
+          {
+            url: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
+            name: "next-auth.session-token",
+          },
+          (cookie) => resolve(cookie)
+        );
       });
-      setIsAuthenticated(response.ok);
+
+      console.log("Session Cookie:", cookie);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/check`,
+        {
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            Cookie: cookie ? `next-auth.session-token=${cookie.value}` : "",
+          },
+        }
+      );
+
+      console.log("Auth Response Status:", response.status);
+      console.log("Response Headers:", Object.fromEntries(response.headers));
+      console.log("Current Cookies:", document.cookie);
+
+      const data = await response.json();
+      console.log("Auth Response Data:", data);
+
+      setIsAuthenticated(data.authenticated);
+
+      if (data.authenticated) {
+        // Fetch todos if authenticated
+        const todosResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/todos`,
+          {
+            credentials: "include",
+          }
+        );
+        if (todosResponse.ok) {
+          const dbTodos = await todosResponse.json();
+          console.log("Database Todos:", dbTodos);
+        } else {
+          console.log(
+            "Error fetching todos from database:",
+            todosResponse.status
+          );
+        }
+      }
     } catch (error) {
       console.error("Error checking auth status:", error);
       setIsAuthenticated(false);
@@ -94,56 +159,55 @@ export function Popup() {
       }
 
       const webAppTodos = (await response.json()) as WebAppTodo[];
+      console.log("Fetched web app todos:", webAppTodos);
 
-      // Convert web app todos to extension format
+      // First, sync local todos to web app
+      for (const localTodo of todos) {
+        const todoExistsInWeb = webAppTodos.some(
+          (webTodo) =>
+            webTodo.title.toLowerCase() === localTodo.text.toLowerCase()
+        );
+
+        if (!todoExistsInWeb) {
+          console.log("Adding local todo to web app:", localTodo);
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/todos`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                title: localTodo.text,
+                completed: localTodo.completed,
+              }),
+            }
+          );
+
+          if (response.ok) {
+            const newWebTodo = await response.json();
+            webAppTodos.push(newWebTodo);
+          }
+        }
+      }
+
+      // Convert web app todos to extension format and update local storage
       const convertedWebAppTodos = webAppTodos.map((todo: WebAppTodo) => ({
         id: todo.id,
         text: todo.title,
         completed: todo.completed,
-        createdAt: todo.createdAt || new Date().toISOString(),
+        createdAt: todo.createdAt,
       }));
 
-      // Merge todos (prefer web app todos for duplicates)
-      const mergedTodos = [...todos];
-
-      for (const webAppTodo of convertedWebAppTodos) {
-        const existingTodoIndex = mergedTodos.findIndex(
-          (t) => t.text.toLowerCase() === webAppTodo.text.toLowerCase()
+      // Update local storage and state with all todos
+      chrome.storage.local.set({ currentTodos: convertedWebAppTodos }, () => {
+        console.log(
+          "Updated local storage with merged todos:",
+          convertedWebAppTodos
         );
-
-        if (existingTodoIndex === -1) {
-          mergedTodos.push(webAppTodo);
-        } else {
-          mergedTodos[existingTodoIndex] = webAppTodo;
-        }
-      }
-
-      // Update local storage and state
-      chrome.storage.local.set({ currentTodos: mergedTodos }, () => {
-        setTodos(mergedTodos);
+        setTodos(convertedWebAppTodos);
       });
-
-      // Sync back to web app
-      for (const todo of todos) {
-        const todoExists = webAppTodos.some(
-          (webTodo: WebAppTodo) =>
-            webTodo.title.toLowerCase() === todo.text.toLowerCase()
-        );
-
-        if (!todoExists) {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/todos`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              title: todo.text,
-              completed: todo.completed,
-            }),
-          });
-        }
-      }
     } catch (error) {
       console.error("Error syncing with web app:", error);
     } finally {
@@ -162,6 +226,8 @@ export function Popup() {
     };
 
     const updatedTodos = [...todos, todo];
+    console.log("Todo Added:", todo);
+    console.log("Updated Todos List:", updatedTodos);
     setTodos(updatedTodos);
 
     if (isAuthenticated) {
@@ -188,18 +254,93 @@ export function Popup() {
     setShowInput(false);
   };
 
-  const toggleTodo = (id: string) => {
+  const toggleTodo = async (id: string) => {
     const updatedTodos = todos.map((todo) =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
+
+    // Update local storage first for immediate feedback
     chrome.storage.local.set({ currentTodos: updatedTodos });
     setTodos(updatedTodos);
+
+    // If authenticated, update in database
+    if (isAuthenticated) {
+      try {
+        const todoToUpdate = updatedTodos.find((todo) => todo.id === id);
+        if (!todoToUpdate) return;
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/todos/${id}`,
+          {
+            method: "PATCH",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              completed: todoToUpdate.completed,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          console.error("Failed to update todo in database:", response.status);
+          // Revert local changes if database update fails
+          const revertedTodos = todos.map((todo) =>
+            todo.id === id ? { ...todo, completed: !todo.completed } : todo
+          );
+          chrome.storage.local.set({ currentTodos: revertedTodos });
+          setTodos(revertedTodos);
+        }
+      } catch (error) {
+        console.error("Error updating todo in database:", error);
+        // Revert local changes if database update fails
+        const revertedTodos = todos.map((todo) =>
+          todo.id === id ? { ...todo, completed: !todo.completed } : todo
+        );
+        chrome.storage.local.set({ currentTodos: revertedTodos });
+        setTodos(revertedTodos);
+      }
+    }
   };
 
-  const deleteTodo = (id: string) => {
+  const deleteTodo = async (id: string) => {
+    const todoToDelete = todos.find((todo) => todo.id === id);
+    console.log("Deleting Todo:", todoToDelete);
     const updatedTodos = todos.filter((todo) => todo.id !== id);
+    console.log("Updated Todos List After Deletion:", updatedTodos);
+
+    // Delete from local storage
     chrome.storage.local.set({ currentTodos: updatedTodos });
     setTodos(updatedTodos);
+
+    // If authenticated, also delete from database
+    if (isAuthenticated) {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/todos/${id}`,
+          {
+            method: "DELETE",
+            credentials: "include",
+          }
+        );
+
+        if (!response.ok) {
+          console.error(
+            "Failed to delete todo from database:",
+            response.status
+          );
+          // Optionally revert the local deletion if db deletion fails
+          chrome.storage.local.set({ currentTodos: todos });
+          setTodos(todos);
+        }
+      } catch (error) {
+        console.error("Error deleting todo from database:", error);
+        // Optionally revert the local deletion if db deletion fails
+        chrome.storage.local.set({ currentTodos: todos });
+        setTodos(todos);
+      }
+    }
   };
 
   const editTodo = (id: string, newText: string) => {

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { FaSync } from "react-icons/fa";
 
 interface Todo {
   id: string;
@@ -21,6 +22,7 @@ export default function TodosPage() {
   const { data: session } = useSession();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [formData, setFormData] = useState({
@@ -378,12 +380,36 @@ export default function TodosPage() {
     <div className="p-4 max-w-4xl mx-auto mt-32">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">My Todos</h1>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-        >
-          Add Todo
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              setIsSyncing(true);
+              try {
+                const response = await fetch("/api/todos");
+                if (!response.ok) throw new Error("Failed to sync todos");
+                const dbTodos = await response.json();
+                setTodos(dbTodos);
+              } catch (error) {
+                console.error("Error syncing todos:", error);
+              } finally {
+                setIsSyncing(false);
+              }
+            }}
+            className={`px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1 ${
+              isSyncing ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={isSyncing}
+          >
+            <FaSync className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
+            Sync
+          </button>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+          >
+            Add Todo
+          </button>
+        </div>
       </div>
 
       {todos.length === 0 ? (
