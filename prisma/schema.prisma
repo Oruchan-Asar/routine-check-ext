@@ -20,6 +20,7 @@ model User {
 model Routine {
   id          String       @id @default(cuid())
   title       String
+  url         String?     // Optional URL field
   user        User        @relation(fields: [userId], references: [id])
   userId      String
   statuses    RoutineStatus[]

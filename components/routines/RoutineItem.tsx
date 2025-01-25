@@ -30,6 +30,16 @@ export const RoutineItem: React.FC<RoutineItemProps> = ({
         >
           {routine.title}
         </h3>
+        {routine.url && (
+          <a
+            href={routine.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-500 hover:text-blue-600"
+          >
+            {routine.url}
+          </a>
+        )}
       </div>
       <div className="flex gap-2">
         <button

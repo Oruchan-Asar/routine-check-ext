@@ -27,6 +27,7 @@ export default function RoutinesPage() {
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
   const [formData, setFormData] = useState<RoutineFormData>({
     title: "",
+    url: "",
   });
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function RoutinesPage() {
 
   useEffect(() => {
     if (!isAddModalOpen && !isEditModalOpen) {
-      setFormData({ title: "" });
+      setFormData({ title: "", url: "" });
       setEditingRoutine(null);
     }
   }, [isAddModalOpen, isEditModalOpen]);
@@ -47,7 +48,7 @@ export default function RoutinesPage() {
     if (!formData.title.trim()) return;
 
     try {
-      await addRoutine(formData.title);
+      await addRoutine(formData.title, formData.url);
       setIsAddModalOpen(false);
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -59,7 +60,7 @@ export default function RoutinesPage() {
     if (!formData.title.trim() || !editingRoutine) return;
 
     try {
-      await updateRoutine(editingRoutine.id, formData.title);
+      await updateRoutine(editingRoutine.id, formData.title, formData.url);
       setIsEditModalOpen(false);
     } catch (error) {
       console.error("Error updating routine:", error);
@@ -68,7 +69,7 @@ export default function RoutinesPage() {
 
   const handleEdit = (routine: Routine) => {
     setEditingRoutine(routine);
-    setFormData({ title: routine.title });
+    setFormData({ title: routine.title, url: routine.url || "" });
     setIsEditModalOpen(true);
   };
 
@@ -127,7 +128,9 @@ export default function RoutinesPage() {
         title="Add Routine"
         formData={formData}
         onSubmit={handleAddSubmit}
-        onChange={(e) => setFormData({ title: e.target.value })}
+        onChange={(e) =>
+          setFormData({ ...formData, [e.target.name]: e.target.value })
+        }
         onClose={() => setIsAddModalOpen(false)}
         submitLabel="Add Routine"
       />
@@ -137,7 +140,9 @@ export default function RoutinesPage() {
         title="Edit Routine"
         formData={formData}
         onSubmit={handleEditSubmit}
-        onChange={(e) => setFormData({ title: e.target.value })}
+        onChange={(e) =>
+          setFormData({ ...formData, [e.target.name]: e.target.value })
+        }
         onClose={() => setIsEditModalOpen(false)}
         submitLabel="Save Changes"
       />

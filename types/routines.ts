@@ -1,6 +1,7 @@
 export interface Routine {
   id: string;
   title: string;
+  url?: string;
   completed: boolean;
   text?: string;
 }
@@ -14,4 +15,5 @@ export interface LocalStorageRoutine {
 
 export interface RoutineFormData {
   title: string;
+  url?: string;
 }

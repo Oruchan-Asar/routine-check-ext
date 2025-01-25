@@ -22,7 +22,12 @@ export async function GET() {
 
     const routines = await prisma.routine.findMany({
       where: { userId: user.id },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        url: true,
+        createdAt: true,
+        updatedAt: true,
         statuses: {
           where: {
             date: {
@@ -36,6 +41,7 @@ export async function GET() {
     const transformedRoutines = routines.map((routine) => ({
       id: routine.id,
       title: routine.title,
+      url: routine.url,
       completed: routine.statuses[0]?.completed ?? false,
       createdAt: routine.createdAt,
       updatedAt: routine.updatedAt,
@@ -64,7 +70,7 @@ export async function POST(request: Request) {
       return new NextResponse("User not found", { status: 404 });
     }
 
-    const { title } = await request.json();
+    const { title, url } = await request.json();
 
     if (!title || typeof title !== "string" || title.trim() === "") {
       return new NextResponse("Title is required", { status: 400 });
@@ -73,6 +79,7 @@ export async function POST(request: Request) {
     const routine = await prisma.routine.create({
       data: {
         title: title.trim(),
+        url: url?.trim(),
         userId: user.id,
         statuses: {
           create: {
@@ -89,6 +96,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       id: routine.id,
       title: routine.title,
+      url: routine.url,
       completed: routine.statuses[0]?.completed ?? false,
       createdAt: routine.createdAt,
       updatedAt: routine.updatedAt,

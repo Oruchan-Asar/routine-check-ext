@@ -86,7 +86,7 @@ export async function PUT(
       return new NextResponse("User not found", { status: 404 });
     }
 
-    const { title } = await request.json();
+    const { title, url } = await request.json();
     const { id: routineId } = await context.params;
 
     const routine = await prisma.routine.findUnique({
@@ -105,10 +105,27 @@ export async function PUT(
       where: { id: routineId },
       data: {
         title,
+        url: url?.trim(),
+      },
+      include: {
+        statuses: {
+          where: {
+            date: {
+              gte: new Date(new Date().setHours(0, 0, 0, 0)),
+            },
+          },
+        },
       },
     });
 
-    return NextResponse.json(updatedRoutine);
+    return NextResponse.json({
+      id: updatedRoutine.id,
+      title: updatedRoutine.title,
+      url: updatedRoutine.url,
+      completed: updatedRoutine.statuses[0]?.completed ?? false,
+      createdAt: updatedRoutine.createdAt,
+      updatedAt: updatedRoutine.updatedAt,
+    });
   } catch (error) {
     console.error("Error updating routine:", error);
     return new NextResponse("Internal Server Error", { status: 500 });

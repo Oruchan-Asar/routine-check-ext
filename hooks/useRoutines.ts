@@ -131,80 +131,44 @@ export const useRoutines = () => {
     }
   };
 
-  const addRoutine = async (title: string) => {
+  const addRoutine = async (title: string, url?: string) => {
+    if (!session) return;
+
     try {
-      if (session?.user) {
-        const response = await fetch("/api/routines", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title }),
-        });
+      const response = await fetch("/api/routines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, url }),
+      });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || "Failed to create routine");
-        }
+      if (!response.ok) throw new Error("Failed to add routine");
 
-        const newRoutine = await response.json();
-        setRoutines((prev) => [...prev, newRoutine]);
-      } else {
-        const newRoutine = {
-          id: crypto.randomUUID(),
-          text: title,
-          completed: false,
-          createdAt: new Date().toISOString(),
-        };
-
-        const currentRoutines = await getFromLocalStorage();
-        const updatedRoutines = [...currentRoutines, newRoutine];
-        saveToLocalStorage(updatedRoutines);
-
-        setRoutines((prev) => [
-          ...prev,
-          {
-            id: newRoutine.id,
-            title: newRoutine.text,
-            completed: newRoutine.completed,
-          },
-        ]);
-      }
+      const newRoutine = await response.json();
+      setRoutines((prev) => [...prev, newRoutine]);
     } catch (error) {
-      console.error("Error creating routine:", error);
+      console.error("Error adding routine:", error);
       throw error;
     }
   };
 
-  const updateRoutine = async (id: string, title: string) => {
+  const updateRoutine = async (id: string, title: string, url?: string) => {
+    if (!session) return;
+
     try {
-      if (session?.user) {
-        const response = await fetch(`/api/routines/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title }),
-        });
+      const response = await fetch(`/api/routines/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, url }),
+      });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || "Failed to update routine");
-        }
+      if (!response.ok) throw new Error("Failed to update routine");
 
-        const updatedRoutine = await response.json();
-        setRoutines((prev) =>
-          prev.map((routine) => (routine.id === id ? updatedRoutine : routine))
-        );
-      } else {
-        const localRoutines = await getFromLocalStorage();
-        const updatedRoutines = localRoutines.map((routine) =>
-          routine.id === id ? { ...routine, text: title } : routine
-        );
-        saveToLocalStorage(updatedRoutines);
-
-        setRoutines((prev) =>
-          prev.map((routine) =>
-            routine.id === id ? { ...routine, title } : routine
-          )
-        );
-      }
+      const updatedRoutine = await response.json();
+      setRoutines((prev) =>
+        prev.map((routine) =>
+          routine.id === id ? { ...routine, ...updatedRoutine } : routine
+        )
+      );
     } catch (error) {
       console.error("Error updating routine:", error);
       throw error;

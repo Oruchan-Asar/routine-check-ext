@@ -32,11 +32,25 @@ export const RoutineModal: React.FC<RoutineModalProps> = ({
               <label className="block text-sm font-medium mb-1">Title</label>
               <input
                 type="text"
+                name="title"
                 value={formData.title || ""}
                 onChange={onChange}
                 className="w-full p-2 border rounded-lg text-gray-900 dark:text-gray-900"
                 autoFocus
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                URL (optional)
+              </label>
+              <input
+                type="url"
+                name="url"
+                value={formData.url || ""}
+                onChange={onChange}
+                placeholder="https://example.com"
+                className="w-full p-2 border rounded-lg text-gray-900 dark:text-gray-900"
               />
             </div>
           </div>

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { FaCheck, FaTimes, FaSync } from "react-icons/fa";
+import { FaSync, FaEdit, FaTrash } from "react-icons/fa";
 
 interface Routine {
   id: string;
   text: string;
+  url?: string;
   completed: boolean;
   createdAt: string;
 }
@@ -11,6 +12,7 @@ interface Routine {
 interface WebAppRoutine {
   id: string;
   title: string;
+  url?: string;
   completed: boolean;
   createdAt: string;
   updatedAt: string;
@@ -38,10 +40,12 @@ export function Popup() {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [routineHistory, setRoutineHistory] = useState<RoutineHistory>({});
   const [newRoutine, setNewRoutine] = useState("");
+  const [newUrl, setNewUrl] = useState("");
   const [showInput, setShowInput] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [editUrl, setEditUrl] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -172,6 +176,7 @@ export function Popup() {
         (routine: WebAppRoutine) => ({
           id: routine.id,
           text: routine.title,
+          url: routine.url,
           completed: routine.completed,
           createdAt: routine.createdAt,
         })
@@ -201,35 +206,16 @@ export function Popup() {
     const routine: Routine = {
       id: crypto.randomUUID(),
       text: newRoutine,
+      url: newUrl.trim() || undefined,
       completed: false,
       createdAt: new Date().toISOString(),
     };
 
     const updatedRoutines = [...routines, routine];
-    console.log("Routine Added:", routine);
-    console.log("Updated Routines List:", updatedRoutines);
     setRoutines(updatedRoutines);
-
-    if (isAuthenticated) {
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/routines`, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: routine.text,
-            completed: routine.completed,
-          }),
-        });
-      } catch (error) {
-        console.error("Error saving routine to database:", error);
-      }
-    }
-
     chrome.storage.local.set({ currentRoutines: updatedRoutines });
     setNewRoutine("");
+    setNewUrl("");
     setShowInput(false);
   };
 
@@ -334,61 +320,27 @@ export function Popup() {
   };
 
   const editRoutine = async (id: string, newText: string) => {
-    if (!newText.trim()) return;
-
-    // Update local state first for immediate feedback
     const updatedRoutines = routines.map((routine) =>
-      routine.id === id ? { ...routine, text: newText } : routine
+      routine.id === id
+        ? {
+            ...routine,
+            text: newText,
+            url: editUrl.trim() || undefined,
+          }
+        : routine
     );
-    chrome.storage.local.set({ currentRoutines: updatedRoutines });
+
     setRoutines(updatedRoutines);
+    chrome.storage.local.set({ currentRoutines: updatedRoutines });
     setEditingRoutine(null);
     setEditText("");
-
-    // If authenticated, update in web app
-    if (isAuthenticated) {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/routines/${id}`,
-          {
-            method: "PUT",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              title: newText,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          console.error(
-            "Failed to update routine in database:",
-            response.status
-          );
-          // Revert local changes if database update fails
-          const revertedRoutines = routines.map((routine) =>
-            routine.id === id ? { ...routine, text: routine.text } : routine
-          );
-          chrome.storage.local.set({ currentRoutines: revertedRoutines });
-          setRoutines(revertedRoutines);
-        }
-      } catch (error) {
-        console.error("Error updating routine in database:", error);
-        // Revert local changes if database update fails
-        const revertedRoutines = routines.map((routine) =>
-          routine.id === id ? { ...routine, text: routine.text } : routine
-        );
-        chrome.storage.local.set({ currentRoutines: revertedRoutines });
-        setRoutines(revertedRoutines);
-      }
-    }
+    setEditUrl("");
   };
 
   const startEditing = (routine: Routine) => {
     setEditingRoutine(routine.id);
     setEditText(routine.text);
+    setEditUrl(routine.url || "");
   };
 
   return (
@@ -438,6 +390,18 @@ export function Popup() {
               }
             }}
           />
+          <input
+            type="text"
+            value={newUrl}
+            onChange={(e) => setNewUrl(e.target.value)}
+            className="flex-1 px-3 py-2 border rounded-md bg-white text-gray-900 placeholder-gray-500"
+            placeholder="URL"
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                addRoutine();
+              }
+            }}
+          />
           <button
             onClick={addRoutine}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -455,69 +419,87 @@ export function Popup() {
           {routines.map((routine) => (
             <div
               key={routine.id}
-              className="flex items-center gap-2 p-2 border rounded-md"
+              className="flex items-start gap-2 p-2 rounded-lg shadow border border-gray-300"
             >
               <input
                 type="checkbox"
                 checked={routine.completed}
                 onChange={() => toggleRoutine(routine.id)}
-                className="h-4 w-4"
+                className="mt-1"
               />
-              {editingRoutine === routine.id ? (
-                <div className="flex-1 flex gap-2">
-                  <input
-                    type="text"
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    className="flex-1 px-2 py-1 border rounded text-gray-900 bg-white min-w-0"
-                    autoFocus
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter") {
-                        editRoutine(routine.id, editText);
-                      }
-                    }}
-                  />
+              <div className="flex-1">
+                {editingRoutine === routine.id ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      className="w-full px-2 py-1 border rounded"
+                      autoFocus
+                    />
+                    <input
+                      type="text"
+                      value={editUrl}
+                      onChange={(e) => setEditUrl(e.target.value)}
+                      className="w-full px-2 py-1 border rounded"
+                      placeholder="URL (optional)"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => editRoutine(routine.id, editText)}
+                        className="text-sm px-2 py-1 bg-blue-500 text-white rounded"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingRoutine(null);
+                          setEditText("");
+                          setEditUrl("");
+                        }}
+                        className="text-sm px-2 py-1 bg-gray-500 text-white rounded"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div
+                      className={`text-sm ${
+                        routine.completed ? "line-through text-gray-500" : ""
+                      }`}
+                    >
+                      {routine.text}
+                    </div>
+                    {routine.url && (
+                      <a
+                        href={routine.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-500 hover:text-blue-600"
+                      >
+                        {routine.url}
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+              {!editingRoutine && (
+                <div className="flex gap-1">
                   <button
-                    onClick={() => editRoutine(routine.id, editText)}
-                    className="p-1.5 bg-green-600 text-white rounded hover:bg-green-700"
-                    title="Save"
+                    onClick={() => startEditing(routine)}
+                    className="text-blue-500 hover:text-blue-600"
                   >
-                    <FaCheck size={14} />
+                    <FaEdit className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => setEditingRoutine(null)}
-                    className="p-1.5 bg-gray-500 text-white rounded hover:bg-gray-600"
-                    title="Cancel"
+                    onClick={() => deleteRoutine(routine.id)}
+                    className="text-red-500 hover:text-red-600"
                   >
-                    <FaTimes size={14} />
+                    <FaTrash className="w-4 h-4" />
                   </button>
                 </div>
-              ) : (
-                <>
-                  <span
-                    className={`flex-1 ${
-                      routine.completed ? "line-through text-gray-500" : ""
-                    }`}
-                  >
-                    {routine.text}
-                  </span>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => startEditing(routine)}
-                      className="text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-100"
-                      title="Edit routine"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteRoutine(routine.id)}
-                      className="text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-100"
-                      title="Delete routine"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </>
               )}
             </div>
           ))}
