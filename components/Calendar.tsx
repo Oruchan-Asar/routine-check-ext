@@ -39,7 +39,7 @@ export default function Calendar() {
 
     const fetchTodos = async () => {
       try {
-        const response = await fetch("/api/todos/calendar", {
+        const response = await fetch("/api/routines/calendar", {
           headers: {
             "x-user-email": session.user?.email || "",
           },

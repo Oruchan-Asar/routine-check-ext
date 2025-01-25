@@ -20,7 +20,7 @@ export async function GET() {
       return new NextResponse("User not found", { status: 404 });
     }
 
-    const todos = await prisma.todo.findMany({
+    const todos = await prisma.routine.findMany({
       where: { userId: user.id },
       include: {
         statuses: {

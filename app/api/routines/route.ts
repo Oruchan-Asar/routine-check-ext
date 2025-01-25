@@ -20,7 +20,7 @@ export async function GET() {
       return new NextResponse("User not found", { status: 404 });
     }
 
-    const todos = await prisma.todo.findMany({
+    const routines = await prisma.routine.findMany({
       where: { userId: user.id },
       include: {
         statuses: {
@@ -33,17 +33,17 @@ export async function GET() {
       },
     });
 
-    const transformedTodos = todos.map((todo) => ({
-      id: todo.id,
-      title: todo.title,
-      completed: todo.statuses[0]?.completed ?? false,
-      createdAt: todo.createdAt,
-      updatedAt: todo.updatedAt,
+    const transformedRoutines = routines.map((routine) => ({
+      id: routine.id,
+      title: routine.title,
+      completed: routine.statuses[0]?.completed ?? false,
+      createdAt: routine.createdAt,
+      updatedAt: routine.updatedAt,
     }));
 
-    return NextResponse.json(transformedTodos);
+    return NextResponse.json(transformedRoutines);
   } catch (error) {
-    console.error("Error fetching todos:", error);
+    console.error("Error fetching routines:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       return new NextResponse("Title is required", { status: 400 });
     }
 
-    const todo = await prisma.todo.create({
+    const routine = await prisma.routine.create({
       data: {
         title: title.trim(),
         userId: user.id,
@@ -87,14 +87,14 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({
-      id: todo.id,
-      title: todo.title,
-      completed: todo.statuses[0]?.completed ?? false,
-      createdAt: todo.createdAt,
-      updatedAt: todo.updatedAt,
+      id: routine.id,
+      title: routine.title,
+      completed: routine.statuses[0]?.completed ?? false,
+      createdAt: routine.createdAt,
+      updatedAt: routine.updatedAt,
     });
   } catch (error) {
-    console.error("Error creating todo:", error);
+    console.error("Error creating routine:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Internal Server Error";
     return new NextResponse(errorMessage, { status: 500 });
@@ -121,74 +121,30 @@ export async function PUT(
     }
 
     const { title } = await request.json();
-    const todoId = params.id;
+    const routineId = params.id;
 
-    const todo = await prisma.todo.findUnique({
-      where: { id: todoId },
+    const routine = await prisma.routine.findUnique({
+      where: { id: routineId },
     });
 
-    if (!todo) {
-      return new NextResponse("Todo not found", { status: 404 });
+    if (!routine) {
+      return new NextResponse("Routine not found", { status: 404 });
     }
 
-    if (todo.userId !== user.id) {
+    if (routine.userId !== user.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const updatedTodo = await prisma.todo.update({
-      where: { id: todoId },
+    const updatedRoutine = await prisma.routine.update({
+      where: { id: routineId },
       data: {
         title,
       },
     });
 
-    return NextResponse.json(updatedTodo);
+    return NextResponse.json(updatedRoutine);
   } catch (error) {
-    console.error("Error updating todo:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
-  }
-}
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = (await getServerSession(authOptions)) as Session;
-
-    if (!session?.user?.email) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return new NextResponse("User not found", { status: 404 });
-    }
-
-    const todoId = params.id;
-
-    const todo = await prisma.todo.findUnique({
-      where: { id: todoId },
-    });
-
-    if (!todo) {
-      return new NextResponse("Todo not found", { status: 404 });
-    }
-
-    if (todo.userId !== user.id) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
-
-    await prisma.todo.delete({
-      where: { id: todoId },
-    });
-
-    return new NextResponse(null, { status: 204 });
-  } catch (error) {
-    console.error("Error deleting todo:", error);
+    console.error("Error updating routine:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

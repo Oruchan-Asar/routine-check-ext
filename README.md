@@ -1,16 +1,16 @@
-# Todo Check - Web App & Browser Extension
+# Routine Check - Web App & Browser Extension
 
-This is a full-stack application that combines a Next.js web application with a browser extension for managing todos and calendar integration.
+This is a full-stack application that combines a Next.js web application with a browser extension for managing routines and calendar integration.
 
 ## Features
 
 - User authentication (registration and login)
-- Todo management with calendar integration
-- Browser extension for quick access to todos
+- Routine management with calendar integration
+- Browser extension for quick access to routines
 - Modern UI components with shadcn/ui
 - PostgreSQL database with Prisma ORM
-- Real-time todo status updates
-- Calendar view for task scheduling
+- Real-time routine status updates
+- Calendar view for routine scheduling
 - Browser notifications and reminders
 - Secure authentication with middleware protection
 
