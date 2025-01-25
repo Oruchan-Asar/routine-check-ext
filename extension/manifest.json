@@ -11,12 +11,17 @@
       "128": "icons/icon128.png"
     }
   },
-  "permissions": ["storage", "alarms", "notifications", "cookies"],
+  "permissions": ["storage", "cookies", "tabs"],
   "host_permissions": ["http://localhost:3000/*"],
   "background": {
-    "service_worker": "dist/background.js",
-    "type": "module"
+    "service_worker": "background.ts"
   },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3000/*"],
+      "js": ["content.ts"]
+    }
+  ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

@@ -105,6 +105,39 @@ export const useRoutines = () => {
       const routine = routines.find((r) => r.id === id);
       if (!routine) return;
 
+      const updatedRoutines = routines.map((r) =>
+        r.id === id ? { ...r, completed: !r.completed } : r
+      );
+      setRoutines(updatedRoutines);
+
+      console.log("Toggle routine:", {
+        id,
+        url: routine.url,
+        completed: routine.completed,
+        newCompleted: !routine.completed,
+        isChrome: typeof chrome !== "undefined",
+        hasTabsAPI: typeof chrome !== "undefined" && "tabs" in chrome,
+        isExtension: typeof chrome?.runtime?.id !== "undefined",
+      });
+
+      // Close matching tabs if routine is being completed and has a URL
+      if (!routine.completed && routine.url) {
+        // Try to send message to extension
+        try {
+          window.postMessage(
+            {
+              type: "CLOSE_MATCHING_TABS",
+              url: routine.url,
+              source: "todo-check-app",
+            },
+            window.location.origin
+          );
+          console.log("Sent close tabs message to extension");
+        } catch (error) {
+          console.error("Error sending message to extension:", error);
+        }
+      }
+
       if (session?.user) {
         const response = await fetch(`/api/routines/${id}`, {
           method: "PATCH",
@@ -115,19 +148,18 @@ export const useRoutines = () => {
         if (!response.ok) throw new Error("Failed to update routine");
       } else {
         const localRoutines = await getFromLocalStorage();
-        const updatedRoutines = localRoutines.map((routine) =>
+        const updatedLocalRoutines = localRoutines.map((routine) =>
           routine.id === id
             ? { ...routine, completed: !routine.completed }
             : routine
         );
-        saveToLocalStorage(updatedRoutines);
+        saveToLocalStorage(updatedLocalRoutines);
       }
-
+    } catch (error) {
+      console.error("Error updating routine:", error);
       setRoutines((prev) =>
         prev.map((r) => (r.id === id ? { ...r, completed: !r.completed } : r))
       );
-    } catch (error) {
-      console.error("Error updating routine:", error);
     }
   };
 

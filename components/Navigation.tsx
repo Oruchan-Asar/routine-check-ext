@@ -21,7 +21,13 @@ export default function Navigation() {
         href="/"
         className="flex items-center w-8 h-8 hover:opacity-80 transition-opacity text-white"
       >
-        <Image src="/logo.svg" alt="Todo Check Logo" width={32} height={32} />
+        <Image
+          src="/logo.svg"
+          alt="Todo Check Logo"
+          width={32}
+          height={32}
+          priority
+        />
       </Link>
       <div className="flex gap-4">
         {status === "authenticated" && session ? (

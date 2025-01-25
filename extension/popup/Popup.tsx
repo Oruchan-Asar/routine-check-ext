@@ -226,6 +226,18 @@ export function Popup() {
         : routine
     );
 
+    const routine = updatedRoutines.find((r) => r.id === id);
+    if (routine?.completed && routine.url) {
+      // Find and close matching tabs
+      chrome.tabs.query({}, (tabs) => {
+        tabs.forEach((tab) => {
+          if (tab.url?.includes(routine.url!)) {
+            chrome.tabs.remove(tab.id!);
+          }
+        });
+      });
+    }
+
     // Update local storage first for immediate feedback
     chrome.storage.local.set({ currentRoutines: updatedRoutines });
     setRoutines(updatedRoutines);
