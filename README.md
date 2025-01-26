@@ -66,3 +66,26 @@ npm run build:extension
 - Tailwind CSS
 - WebPack (for extension bundling)
 - bcryptjs for password hashing
+
+## Deployment
+
+### Web Application
+
+1. Deploy to your preferred hosting platform
+2. Set up PostgreSQL database
+3. Configure environment variables
+4. Run database migrations
+
+### Environment Variables
+
+```env
+DATABASE_URL="postgresql://user:password@host:5432/dbname"
+NEXTAUTH_URL="https://your-domain.com"
+NEXTAUTH_SECRET="your-secret"
+```
+
+### Browser Extension
+
+1. Update API URLs in extension configuration
+2. Build extension for production
+3. Submit to Chrome Web Store

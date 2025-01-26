@@ -16,9 +16,11 @@ export default function SignupPage() {
     password: "",
     name: "",
   });
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(""); // Clear previous errors
     try {
       // Get todos from extension's local storage if available
       let extensionTodos: ExtensionTodo[] = [];
@@ -36,14 +38,19 @@ export default function SignupPage() {
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         // Clear extension todos after successful import
         if (typeof chrome !== "undefined" && chrome.storage) {
           await chrome.storage.local.set({ currentTodos: [] });
         }
         window.location.href = "/login";
+      } else {
+        setError(data.error || "Failed to sign up");
       }
     } catch (error) {
+      setError("An unexpected error occurred. Please try again.");
       console.error("Signup failed:", error);
     }
   };
@@ -55,6 +62,11 @@ export default function SignupPage() {
           <h2 className="text-2xl font-bold">Sign Up</h2>
           <p className="text-gray-600">Create your account</p>
         </div>
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <input

@@ -15,6 +15,18 @@ export async function POST(request: Request) {
   try {
     const { email, password, name, extensionTodos } = await request.json();
 
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "Email already exists" },
+        { status: 400 }
+      );
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -27,19 +39,25 @@ export async function POST(request: Request) {
       },
     });
 
-    // If extension todos exist, import them
+    // If extension todos exist, import them as routines
     if (extensionTodos && Array.isArray(extensionTodos)) {
-      const todosToCreate = extensionTodos.map((todo: ExtensionTodo) => ({
+      const routinesToCreate = extensionTodos.map((todo: ExtensionTodo) => ({
         title: todo.text,
-        completed: todo.completed,
-        dueDate: new Date(todo.createdAt),
-        description: "",
         userId: user.id,
+        statuses: {
+          create: {
+            date: new Date(todo.createdAt),
+            completed: todo.completed,
+          },
+        },
       }));
 
-      await prisma.todo.createMany({
-        data: todosToCreate,
-      });
+      // Create routines with their initial status
+      for (const routineData of routinesToCreate) {
+        await prisma.routine.create({
+          data: routineData,
+        });
+      }
     }
 
     return NextResponse.json({ message: "User created successfully" });
