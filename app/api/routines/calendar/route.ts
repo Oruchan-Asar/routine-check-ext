@@ -20,11 +20,14 @@ export async function GET() {
       return new NextResponse("User not found", { status: 404 });
     }
 
-    const todos = await prisma.routine.findMany({
-      where: { userId: user.id },
+    const routines = await prisma.routine.findMany({
+      where: {
+        userId: user.id,
+      },
       include: {
         statuses: {
           select: {
+            id: true,
             date: true,
             completed: true,
           },
@@ -32,18 +35,19 @@ export async function GET() {
       },
     });
 
-    const transformedTodos = todos.map((todo) => ({
-      id: todo.id,
-      title: todo.title,
-      statuses: todo.statuses.map((status) => ({
-        date: status.date.toISOString().split("T")[0],
+    const transformedRoutines = routines.map((routine) => ({
+      id: routine.id,
+      title: routine.title,
+      statuses: routine.statuses.map((status) => ({
+        id: status.id,
+        date: status.date,
         completed: status.completed,
       })),
     }));
 
-    return NextResponse.json(transformedTodos);
+    return NextResponse.json(transformedRoutines);
   } catch (error) {
-    console.error("Error fetching todos:", error);
+    console.error("Error fetching routines:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

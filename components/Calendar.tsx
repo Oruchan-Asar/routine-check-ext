@@ -6,10 +6,11 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-interface Todo {
+interface Routine {
   id: string;
   title: string;
   statuses: {
+    id: string;
     date: string;
     completed: boolean;
   }[];
@@ -37,43 +38,36 @@ export default function Calendar() {
       return;
     }
 
-    const fetchTodos = async () => {
+    const fetchRoutines = async () => {
       try {
-        const response = await fetch("/api/routines/calendar", {
-          headers: {
-            "x-user-email": session.user?.email || "",
-          },
-        });
-
+        const response = await fetch("/api/routines/calendar");
         if (!response.ok) {
-          if (response.status === 401) {
-            router.push("/login");
-            return;
-          }
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error("Failed to fetch routines");
         }
+        const routines: Routine[] = await response.json();
 
-        const todos: Todo[] = await response.json();
-
-        // Convert todos to calendar events
-        const calendarEvents = todos.flatMap((todo) =>
-          todo.statuses
-            .filter((status) => !status.completed)
-            .map((status) => ({
-              title: todo.title,
+        // Convert routines to calendar events
+        const calendarEvents = routines.flatMap((routine) =>
+          routine.statuses.map((status) => {
+            const color = status.completed ? "#22c55e" : "#ef4444"; // Green for completed, red for unchecked routines
+            return {
+              id: status.id,
+              title: routine.title,
               date: status.date,
-              backgroundColor: "#ef4444", // Red color for unchecked todos
-              borderColor: "#ef4444",
-            }))
+              backgroundColor: color,
+              borderColor: color,
+              display: "block",
+            };
+          })
         );
 
         setEvents(calendarEvents);
       } catch (error) {
-        console.error("Error fetching todos:", error);
+        console.error("Error fetching routines:", error);
       }
     };
 
-    fetchTodos();
+    fetchRoutines();
   }, [status, router, session]);
 
   if (status === "loading") {

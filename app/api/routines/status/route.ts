@@ -20,30 +20,30 @@ export async function POST(request: Request) {
       return new NextResponse("User not found", { status: 404 });
     }
 
-    const { todoId, completed } = await request.json();
+    const { routineId, completed } = await request.json();
 
-    if (!todoId || typeof completed !== "boolean") {
+    if (!routineId || typeof completed !== "boolean") {
       return new NextResponse("Invalid request body", { status: 400 });
     }
 
-    const todo = await prisma.todo.findUnique({
-      where: { id: todoId },
+    const routine = await prisma.routine.findUnique({
+      where: { id: routineId },
     });
 
-    if (!todo) {
-      return new NextResponse("Todo not found", { status: 404 });
+    if (!routine) {
+      return new NextResponse("Routine not found", { status: 404 });
     }
 
-    if (todo.userId !== user.id) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    if (routine.userId !== user.id) {
+      return new NextResponse("Unauthorized", { status: 403 });
     }
 
-    const today = new Date(new Date().setHours(0, 0, 0, 0));
+    const today = new Date().toISOString().split("T")[0];
 
-    const todoStatus = await prisma.todoStatus.upsert({
+    const routineStatus = await prisma.routineStatus.upsert({
       where: {
-        todoId_date: {
-          todoId,
+        routineId_date: {
+          routineId,
           date: today,
         },
       },
@@ -51,15 +51,15 @@ export async function POST(request: Request) {
         completed,
       },
       create: {
-        todoId,
+        routineId,
         date: today,
         completed,
       },
     });
 
-    return NextResponse.json(todoStatus);
+    return NextResponse.json(routineStatus);
   } catch (error) {
-    console.error("Error updating todo status:", error);
+    console.error("Error updating routine status:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

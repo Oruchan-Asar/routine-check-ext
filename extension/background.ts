@@ -1,6 +1,6 @@
 /// <reference types="chrome"/>
 
-interface Todo {
+interface Routine {
   id: string;
   text: string;
   completed: boolean;
@@ -9,18 +9,18 @@ interface Todo {
 
 // Listen for installation
 chrome.runtime.onInstalled.addListener(() => {
-  // Initialize storage with empty todos and history
+  // Initialize storage with empty routines and history
   const today = new Date().toISOString().split("T")[0];
   chrome.storage.local.set({
-    currentTodos: [],
-    todoHistory: {
+    currentRoutines: [],
+    routineHistory: {
       [today]: [],
     },
   });
 
-  // Create daily refresh alarm
+  // Set up daily refresh alarm
   chrome.alarms.create("daily-refresh", {
-    periodInMinutes: 24 * 60,
+    periodInMinutes: 1440, // 24 hours
     when: getNextMidnight(),
   });
 });
@@ -36,34 +36,36 @@ function getNextMidnight(): number {
 // Listen for alarms
 chrome.alarms.onAlarm.addListener(async (alarm: chrome.alarms.Alarm) => {
   if (alarm.name === "daily-refresh") {
-    // Get current todos
-    const { currentTodos } = await chrome.storage.local.get("currentTodos");
-    const { todoHistory } = await chrome.storage.local.get("todoHistory");
+    // Get current routines
+    const { currentRoutines } = await chrome.storage.local.get(
+      "currentRoutines"
+    );
+    const { routineHistory } = await chrome.storage.local.get("routineHistory");
 
-    // Save current todos to history
+    // Save current routines to history
     const today = new Date().toISOString().split("T")[0];
     const updatedHistory = {
-      ...todoHistory,
-      [today]: currentTodos,
+      ...routineHistory,
+      [today]: currentRoutines,
     };
 
-    // Uncheck all todos instead of clearing them
-    const uncheckedTodos = currentTodos.map((todo: Todo) => ({
-      ...todo,
+    // Uncheck all routines instead of clearing them
+    const uncheckedRoutines = currentRoutines.map((routine: Routine) => ({
+      ...routine,
       completed: false,
     }));
 
-    // Update storage with unchecked todos and history
+    // Update storage with unchecked routines and history
     await chrome.storage.local.set({
-      currentTodos: uncheckedTodos,
-      todoHistory: updatedHistory,
+      currentRoutines: uncheckedRoutines,
+      routineHistory: updatedHistory,
     });
-  } else if (alarm.name.startsWith("todo-")) {
+  } else if (alarm.name.startsWith("routine-")) {
     chrome.notifications.create(alarm.name, {
       type: "basic",
       iconUrl: "icons/icon128.png",
-      title: "Todo Reminder",
-      message: "You have a pending todo item!",
+      title: "Routine Reminder",
+      message: "You have a pending routine item!",
       priority: 2,
     });
   }

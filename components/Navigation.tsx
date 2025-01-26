@@ -23,7 +23,7 @@ export default function Navigation() {
       >
         <Image
           src="/logo.svg"
-          alt="Todo Check Logo"
+          alt="Routine Check Logo"
           width={32}
           height={32}
           priority

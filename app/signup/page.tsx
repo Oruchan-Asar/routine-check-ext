@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
-interface ExtensionTodo {
+interface ExtensionRoutine {
   id: string;
   text: string;
   completed: boolean;
@@ -22,11 +22,13 @@ export default function SignupPage() {
     e.preventDefault();
     setError(""); // Clear previous errors
     try {
-      // Get todos from extension's local storage if available
-      let extensionTodos: ExtensionTodo[] = [];
-      if (typeof chrome !== "undefined" && chrome.storage) {
-        const result = await chrome.storage.local.get(["currentTodos"]);
-        extensionTodos = result.currentTodos || [];
+      // Get routines from extension's local storage if available
+      let extensionRoutines: ExtensionRoutine[] = [];
+      try {
+        const result = await chrome.storage.local.get(["currentRoutines"]);
+        extensionRoutines = result.currentRoutines || [];
+      } catch (error) {
+        console.error("Error accessing extension storage:", error);
       }
 
       const response = await fetch("/api/auth/signup", {
@@ -34,16 +36,18 @@ export default function SignupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          extensionTodos,
+          extensionRoutines,
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // Clear extension todos after successful import
-        if (typeof chrome !== "undefined" && chrome.storage) {
-          await chrome.storage.local.set({ currentTodos: [] });
+        // Clear extension routines after successful import
+        try {
+          await chrome.storage.local.set({ currentRoutines: [] });
+        } catch (error) {
+          console.error("Error clearing extension storage:", error);
         }
         window.location.href = "/login";
       } else {

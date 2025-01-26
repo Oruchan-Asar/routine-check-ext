@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-interface ExtensionTodo {
+interface ExtensionRoutine {
   id: string;
   text: string;
   completed: boolean;
@@ -13,7 +13,7 @@ interface ExtensionTodo {
 
 export async function POST(request: Request) {
   try {
-    const { email, password, name, extensionTodos } = await request.json();
+    const { email, password, name, extensionRoutines } = await request.json();
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -39,18 +39,20 @@ export async function POST(request: Request) {
       },
     });
 
-    // If extension todos exist, import them as routines
-    if (extensionTodos && Array.isArray(extensionTodos)) {
-      const routinesToCreate = extensionTodos.map((todo: ExtensionTodo) => ({
-        title: todo.text,
-        userId: user.id,
-        statuses: {
-          create: {
-            date: new Date(todo.createdAt),
-            completed: todo.completed,
+    // If extension routines exist, import them
+    if (extensionRoutines && Array.isArray(extensionRoutines)) {
+      const routinesToCreate = extensionRoutines.map(
+        (routine: ExtensionRoutine) => ({
+          title: routine.text,
+          userId: user.id,
+          statuses: {
+            create: {
+              date: new Date(routine.createdAt),
+              completed: routine.completed,
+            },
           },
-        },
-      }));
+        })
+      );
 
       // Create routines with their initial status
       for (const routineData of routinesToCreate) {

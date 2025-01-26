@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function TodosLayout({
+export default function RoutinesLayout({
   children,
 }: {
   children: React.ReactNode;

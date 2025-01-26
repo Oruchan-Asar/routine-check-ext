@@ -8,7 +8,7 @@ window.addEventListener("message", async (event) => {
   console.log("Content script received message:", message);
 
   // Verify message source
-  if (message.source !== "todo-check-app") return;
+  if (message.source !== "routine-check-ext") return;
 
   if (message.type === "CLOSE_MATCHING_TABS" && message.url) {
     console.log("Closing tabs matching URL:", message.url);
