@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "build:extension": "tsc --project tsconfig.extension.json && webpack --config webpack.config.js",
     "build:css": "tailwindcss -i ./app/globals.css -o ./extension/dist/output.css",
     "build:all": "npm run build:css && npm run build:extension",
