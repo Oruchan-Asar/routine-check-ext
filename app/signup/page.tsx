@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 interface ExtensionRoutine {
   id: string;
@@ -104,12 +105,9 @@ export default function SignupPage() {
             />
           </div>
           <div className="mt-6 space-y-4">
-            <button
-              type="submit"
-              className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-            >
+            <Button type="submit" className="w-full">
               Sign Up
-            </button>
+            </Button>
             <p className="text-sm text-gray-500">
               Already have an account?{" "}
               <Link href="/login" className="text-blue-500">

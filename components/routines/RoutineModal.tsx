@@ -1,5 +1,6 @@
 import React from "react";
 import { RoutineFormData } from "@/types/routines";
+import { Button } from "@/components/ui/button";
 
 interface RoutineModalProps {
   isOpen: boolean;
@@ -55,19 +56,12 @@ export const RoutineModal: React.FC<RoutineModalProps> = ({
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
-            >
+            <Button type="button" onClick={onClose} variant="ghost">
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            >
+            </Button>
+            <Button type="submit" variant="default">
               {submitLabel}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

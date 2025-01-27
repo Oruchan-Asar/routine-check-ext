@@ -7,6 +7,7 @@ import { Routine, RoutineFormData } from "../../types/routines";
 import { useRoutines } from "../../hooks/useRoutines";
 import { RoutineModal } from "@/components/routines/RoutineModal";
 import { RoutineItem } from "@/components/routines/RoutineItem";
+import { Button } from "@/components/ui/button";
 
 export default function RoutinesPage() {
   const { status } = useSession();
@@ -86,22 +87,18 @@ export default function RoutinesPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">My Routines</h1>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={syncRoutines}
-            className={`px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1 ${
-              isSyncing ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            variant="secondary"
             disabled={isSyncing}
+            className="flex items-center gap-1"
           >
             <FaSync className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
             Sync
-          </button>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-          >
+          </Button>
+          <Button onClick={() => setIsAddModalOpen(true)} variant="default">
             Add Routine
-          </button>
+          </Button>
         </div>
       </div>
 

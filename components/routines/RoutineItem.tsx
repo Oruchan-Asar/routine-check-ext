@@ -1,6 +1,7 @@
 import React from "react";
 import { Routine } from "../../types/routines";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 interface RoutineItemProps {
   routine: Routine;
@@ -43,22 +44,20 @@ export const RoutineItem: React.FC<RoutineItemProps> = ({
         )}
       </div>
       <div className="flex gap-2">
-        <button
-          onClick={() => onEdit(routine)}
-          className="text-blue-500 hover:text-blue-600"
-        >
+        <Button onClick={() => onEdit(routine)} variant="ghost" size="sm">
           Edit
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => {
             if (confirm("Are you sure you want to delete this routine?")) {
               onDelete(routine.id);
             }
           }}
-          className="text-red-500 hover:text-red-600"
+          variant="destructive"
+          size="sm"
         >
           Delete
-        </button>
+        </Button>
       </div>
     </div>
   );

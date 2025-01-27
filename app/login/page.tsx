@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -71,12 +72,9 @@ export default function LoginPage() {
             />
           </div>
           <div className="mt-6 space-y-4">
-            <button
-              type="submit"
-              className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-            >
+            <Button type="submit" className="w-full">
               Login
-            </button>
+            </Button>
             <p className="text-sm text-gray-500">
               Don&apos;t have an account?{" "}
               <Link href="/signup" className="text-blue-500">

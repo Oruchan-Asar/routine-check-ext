@@ -5,6 +5,7 @@ import { signOut, useSession } from "next-auth/react";
 import { FaUser } from "react-icons/fa";
 import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
 export default function Navigation() {
   const router = useRouter();
@@ -32,30 +33,21 @@ export default function Navigation() {
       <div className="flex gap-4">
         {status === "authenticated" && session ? (
           <div className="flex items-center gap-4">
-            <button
-              onClick={handleLogout}
-              className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm h-10 px-4"
-            >
+            <Button onClick={handleLogout} variant="outline">
               Logout
-            </button>
+            </Button>
             <div className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center">
               <FaUser size={20} />
             </div>
           </div>
         ) : (
           <>
-            <button
-              onClick={() => router.push("/login")}
-              className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm h-10 px-4"
-            >
+            <Button onClick={() => router.push("/login")} variant="outline">
               Login
-            </button>
-            <button
-              onClick={() => router.push("/signup")}
-              className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm h-10 px-4"
-            >
+            </Button>
+            <Button onClick={() => router.push("/signup")} variant="default">
               Sign Up
-            </button>
+            </Button>
           </>
         )}
       </div>
