@@ -1,5 +1,6 @@
 import React from "react";
 import { Routine } from "../../types/routines";
+import Link from "next/link";
 
 interface RoutineItemProps {
   routine: Routine;
@@ -31,14 +32,14 @@ export const RoutineItem: React.FC<RoutineItemProps> = ({
           {routine.title}
         </h3>
         {routine.url && (
-          <a
+          <Link
             href={routine.url}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-blue-500 hover:text-blue-600"
           >
             {routine.url}
-          </a>
+          </Link>
         )}
       </div>
       <div className="flex gap-2">
