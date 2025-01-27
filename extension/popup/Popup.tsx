@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { FaSync, FaEdit, FaTrash } from "react-icons/fa";
+import { FaSync } from "react-icons/fa";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Card, CardContent } from "../components/ui/card";
+import { Checkbox } from "../components/ui/checkbox";
+import { ScrollArea } from "../components/ui/scroll-area";
+import { ModeToggle } from "../components/mode-toggle";
+import { cn } from "../lib/utils";
 
 interface Routine {
   id: string;
@@ -18,10 +25,6 @@ interface WebAppRoutine {
   updatedAt: string;
 }
 
-interface RoutineHistory {
-  [date: string]: Routine[];
-}
-
 interface ChromeCookie {
   name: string;
   value: string;
@@ -38,11 +41,9 @@ interface ChromeCookie {
 
 export function Popup() {
   const [routines, setRoutines] = useState<Routine[]>([]);
-  const [routineHistory, setRoutineHistory] = useState<RoutineHistory>({});
   const [newRoutine, setNewRoutine] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [showInput, setShowInput] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [editUrl, setEditUrl] = useState("");
@@ -60,7 +61,6 @@ export function Popup() {
       (result) => {
         console.log("Local Storage Routines:", result.currentRoutines || []);
         setRoutines(result.currentRoutines || []);
-        setRoutineHistory(result.routineHistory || {});
       }
     );
 
@@ -356,201 +356,165 @@ export function Popup() {
   };
 
   return (
-    <div className="p-4 w-[440px]">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Routine Check</h1>
-        <div className="flex gap-2">
-          <button
+    <div className="w-[350px] p-4 bg-background text-foreground">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold">Routine Check</h1>
+        <div className="flex items-center gap-2">
+          <ModeToggle />
+          <Button
+            variant="outline"
+            size="icon"
             onClick={syncWithWebApp}
-            className={`px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm flex items-center gap-1 ${
-              isSyncing ? "opacity-50 cursor-not-allowed" : ""
-            }`}
             disabled={isSyncing}
           >
-            <FaSync className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
-            Sync
-          </button>
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-          >
-            {showHistory ? "Current" : "History"}
-          </button>
-          {!showHistory && (
-            <button
-              onClick={() => setShowInput(!showInput)}
-              className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-            >
-              {showInput ? "Cancel" : "Add Routine"}
-            </button>
-          )}
+            <FaSync className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+          </Button>
         </div>
       </div>
 
-      {showInput && !showHistory && (
-        <div className="flex gap-2 mb-4">
-          <input
-            type="text"
-            value={newRoutine}
-            onChange={(e) => setNewRoutine(e.target.value)}
-            className="flex-1 px-3 py-2 border rounded-md bg-white text-gray-900 placeholder-gray-500"
-            placeholder="What needs to be done?"
-            autoFocus
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                addRoutine();
-              }
-            }}
-          />
-          <input
-            type="text"
-            value={newUrl}
-            onChange={(e) => setNewUrl(e.target.value)}
-            className="flex-1 px-3 py-2 border rounded-md bg-white text-gray-900 placeholder-gray-500"
-            placeholder="URL"
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                addRoutine();
-              }
-            }}
-          />
-          <button
-            onClick={addRoutine}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Add
-          </button>
-        </div>
+      {!isAuthenticated && (
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground mb-2">
+              Sign in to sync your routines across devices
+            </p>
+            <Button onClick={syncWithWebApp} className="w-full">
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
-      {!showHistory ? (
-        <div className="space-y-2">
-          {routines.length === 0 && (
-            <p className="text-gray-500 text-center">No routines for today</p>
-          )}
-          {routines.map((routine) => (
-            <div
-              key={routine.id}
-              className="flex items-start gap-2 p-2 rounded-lg shadow border border-gray-300"
-            >
-              <input
-                type="checkbox"
-                checked={routine.completed}
-                onChange={() => toggleRoutine(routine.id)}
-                className="mt-1"
+      <ScrollArea className="h-[400px] pr-4">
+        {showInput ? (
+          <Card className="mb-4">
+            <CardContent className="p-4 space-y-2">
+              <Input
+                placeholder="Routine name"
+                value={newRoutine}
+                onChange={(e) => setNewRoutine(e.target.value)}
+                className="mb-2"
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    addRoutine();
+                  }
+                }}
               />
-              <div className="flex-1">
+              <Input
+                placeholder="URL (optional)"
+                value={newUrl}
+                onChange={(e) => setNewUrl(e.target.value)}
+                className="mb-2"
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    addRoutine();
+                  }
+                }}
+              />
+              <div className="flex gap-2">
+                <Button onClick={addRoutine} className="flex-1">
+                  Add
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowInput(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Button
+            onClick={() => setShowInput(true)}
+            className="w-full mb-4"
+            variant="outline"
+          >
+            Add New Routine
+          </Button>
+        )}
+
+        <div className="space-y-2">
+          {routines.map((routine) => (
+            <Card key={routine.id} className="relative">
+              <CardContent className="p-4">
                 {editingRoutine === routine.id ? (
                   <div className="space-y-2">
-                    <input
-                      type="text"
+                    <Input
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
-                      className="w-full px-2 py-1 border rounded"
-                      autoFocus
+                      className="mb-2"
                     />
-                    <input
-                      type="text"
+                    <Input
                       value={editUrl}
                       onChange={(e) => setEditUrl(e.target.value)}
-                      className="w-full px-2 py-1 border rounded"
                       placeholder="URL (optional)"
+                      className="mb-2"
                     />
-                    <div className="flex justify-end gap-2">
-                      <button
+                    <div className="flex gap-2">
+                      <Button
                         onClick={() => editRoutine(routine.id, editText)}
-                        className="text-sm px-2 py-1 bg-blue-500 text-white rounded"
+                        className="flex-1"
                       >
                         Save
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingRoutine(null);
-                          setEditText("");
-                          setEditUrl("");
-                        }}
-                        className="text-sm px-2 py-1 bg-gray-500 text-white rounded"
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setEditingRoutine(null)}
+                        className="flex-1"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
-                  <div>
-                    <div
-                      className={`text-sm ${
-                        routine.completed ? "line-through text-gray-500" : ""
-                      }`}
-                    >
-                      {routine.text}
-                    </div>
-                    {routine.url && (
-                      <a
-                        href={routine.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-500 hover:text-blue-600"
-                      >
-                        {routine.url}
-                      </a>
-                    )}
-                  </div>
-                )}
-              </div>
-              {!editingRoutine && (
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => startEditing(routine)}
-                    className="text-blue-500 hover:text-blue-600"
-                  >
-                    <FaEdit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => deleteRoutine(routine.id)}
-                    className="text-red-500 hover:text-red-600"
-                  >
-                    <FaTrash className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {Object.entries(routineHistory)
-            .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
-            .map(([date, routines]) => (
-              <div key={date} className="border rounded-md p-3">
-                <h3 className="font-semibold mb-2">
-                  {new Date(date).toLocaleDateString()}
-                </h3>
-                <div className="space-y-2">
-                  {routines.map((routine) => (
-                    <div
-                      key={routine.id}
-                      className="flex items-center gap-2 p-2 border rounded-md"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={routine.completed}
-                        disabled
-                        className="h-4 w-4"
-                      />
-                      <span
-                        className={`flex-1 ${
-                          routine.completed ? "line-through text-gray-500" : ""
-                        }`}
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={routine.completed}
+                      onCheckedChange={() => toggleRoutine(routine.id)}
+                      id={routine.id}
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor={routine.id}
+                        className={cn(
+                          "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+                          routine.completed && "line-through opacity-50"
+                        )}
                       >
                         {routine.text}
-                      </span>
+                      </label>
+                      {routine.url && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {routine.url}
+                        </p>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEditing(routine)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteRoutine(routine.id)}
+                        className="text-destructive"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      )}
+      </ScrollArea>
     </div>
   );
 }

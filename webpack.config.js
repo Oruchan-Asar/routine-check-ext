@@ -20,6 +20,9 @@ const config = {
   },
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx"],
+    alias: {
+      "@": path.resolve(__dirname, "extension"),
+    },
   },
   module: {
     rules: [
@@ -30,7 +33,16 @@ const config = {
       },
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader", "postcss-loader"],
+        use: [
+          "style-loader",
+          {
+            loader: "css-loader",
+            options: {
+              importLoaders: 1,
+            },
+          },
+          "postcss-loader",
+        ],
       },
     ],
   },

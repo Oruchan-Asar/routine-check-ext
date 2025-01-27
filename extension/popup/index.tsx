@@ -1,9 +1,16 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { ThemeProvider } from "../components/theme-provider";
 import { Popup } from "./Popup";
-import "../../app/globals.css";
+import "../dist/output.css";
 
 const container = document.getElementById("root");
-if (!container) throw new Error("Failed to find the root element");
-const root = createRoot(container);
-root.render(<Popup />);
+const root = createRoot(container!);
+
+root.render(
+  <React.StrictMode>
+    <ThemeProvider>
+      <Popup />
+    </ThemeProvider>
+  </React.StrictMode>
+);
