@@ -51,15 +51,10 @@ export function Popup() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
-    console.log("Authentication Status:", isAuthenticated);
-  }, [isAuthenticated]);
-
-  useEffect(() => {
     // Load routines and history from storage
     chrome.storage.local.get(
       ["currentRoutines", "routineHistory"],
       (result) => {
-        console.log("Local Storage Routines:", result.currentRoutines || []);
         setRoutines(result.currentRoutines || []);
       }
     );
@@ -81,8 +76,6 @@ export function Popup() {
         );
       });
 
-      console.log("Session Cookie:", cookie);
-
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/auth/check`,
         {
@@ -94,33 +87,9 @@ export function Popup() {
         }
       );
 
-      console.log("Auth Response Status:", response.status);
-      console.log("Response Headers:", Object.fromEntries(response.headers));
-      console.log("Current Cookies:", document.cookie);
-
       const data = await response.json();
-      console.log("Auth Response Data:", data);
 
       setIsAuthenticated(data.authenticated);
-
-      if (data.authenticated) {
-        // Fetch routines if authenticated
-        const routinesResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/routines`,
-          {
-            credentials: "include",
-          }
-        );
-        if (routinesResponse.ok) {
-          const dbRoutines = await routinesResponse.json();
-          console.log("Database Routines:", dbRoutines);
-        } else {
-          console.log(
-            "Error fetching routines from database:",
-            routinesResponse.status
-          );
-        }
-      }
     } catch (error) {
       console.error("Error checking auth status:", error);
       setIsAuthenticated(false);
@@ -130,8 +99,8 @@ export function Popup() {
   const syncWithWebApp = async () => {
     if (!isAuthenticated) {
       // Open the login page in a new tab if not authenticated
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-      chrome.tabs.create({ url: `${apiUrl}/login` }, (tab) => {
+      const url = process.env.NEXTAUTH_URL || "http://localhost:3000";
+      chrome.tabs.create({ url: `${url}/login` }, (tab) => {
         // Add listener for tab updates
         chrome.tabs.onUpdated.addListener(async function listener(tabId, info) {
           // Check if it's our tab and it's done loading
@@ -169,7 +138,6 @@ export function Popup() {
       }
 
       const webAppRoutines = (await response.json()) as WebAppRoutine[];
-      console.log("Fetched web app routines:", webAppRoutines);
 
       // Convert web app routines to extension format
       const convertedWebAppRoutines = webAppRoutines.map(
@@ -186,10 +154,6 @@ export function Popup() {
       chrome.storage.local.set(
         { currentRoutines: convertedWebAppRoutines },
         () => {
-          console.log(
-            "Updated local storage with web app routines:",
-            convertedWebAppRoutines
-          );
           setRoutines(convertedWebAppRoutines);
         }
       );
@@ -293,10 +257,7 @@ export function Popup() {
   };
 
   const deleteRoutine = async (id: string) => {
-    const routineToDelete = routines.find((routine) => routine.id === id);
-    console.log("Deleting Routine:", routineToDelete);
     const updatedRoutines = routines.filter((routine) => routine.id !== id);
-    console.log("Updated Routines List After Deletion:", updatedRoutines);
 
     // Delete from local storage
     chrome.storage.local.set({ currentRoutines: updatedRoutines });

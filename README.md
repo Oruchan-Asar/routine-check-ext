@@ -2,7 +2,7 @@
 
 This is a full-stack application that combines a Next.js web application with a browser extension for managing routines and calendar integration.
 
-🌐 [Live Web App](https://routine-check-ext.vercel.app/)
+🌐 [Live Web App](https://www.routinest.com)
 
 ## Features
 

@@ -5,13 +5,11 @@ window.addEventListener("message", async (event) => {
     return;
 
   const message = event.data;
-  console.log("Content script received message:", message);
 
   // Verify message source
   if (message.source !== "routine-check-ext") return;
 
   if (message.type === "CLOSE_MATCHING_TABS" && message.url) {
-    console.log("Closing tabs matching URL:", message.url);
     try {
       await new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
@@ -24,7 +22,6 @@ window.addEventListener("message", async (event) => {
               console.error("Chrome runtime error:", chrome.runtime.lastError);
               reject(chrome.runtime.lastError);
             } else {
-              console.log("Response from background script:", response);
               resolve(response);
             }
           }

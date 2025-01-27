@@ -73,14 +73,11 @@ chrome.alarms.onAlarm.addListener(async (alarm: chrome.alarms.Alarm) => {
 
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("Background script received message:", message);
-
   if (message.type === "CLOSE_MATCHING_TABS" && message.url) {
     chrome.tabs.query({}, (tabs) => {
       const closedTabs: string[] = [];
       tabs.forEach((tab) => {
         if (tab.url?.includes(message.url)) {
-          console.log("Closing tab:", tab.url);
           chrome.tabs.remove(tab.id!);
           closedTabs.push(tab.url);
         }

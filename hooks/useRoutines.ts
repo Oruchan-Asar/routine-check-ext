@@ -110,16 +110,6 @@ export const useRoutines = () => {
       );
       setRoutines(updatedRoutines);
 
-      console.log("Toggle routine:", {
-        id,
-        url: routine.url,
-        completed: routine.completed,
-        newCompleted: !routine.completed,
-        isChrome: typeof chrome !== "undefined",
-        hasTabsAPI: typeof chrome !== "undefined" && "tabs" in chrome,
-        isExtension: typeof chrome?.runtime?.id !== "undefined",
-      });
-
       // Close matching tabs if routine is being completed and has a URL
       if (!routine.completed && routine.url) {
         // Try to send message to extension
@@ -132,7 +122,6 @@ export const useRoutines = () => {
             },
             window.location.origin
           );
-          console.log("Sent close tabs message to extension");
         } catch (error) {
           console.error("Error sending message to extension:", error);
         }
