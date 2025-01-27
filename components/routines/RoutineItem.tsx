@@ -30,7 +30,7 @@ export const RoutineItem: React.FC<RoutineItemProps> = ({
   onDelete,
 }) => {
   return (
-    <Card>
+    <Card className="mb-4">
       <CardContent className="flex items-center gap-4 p-6">
         <Checkbox
           checked={routine.completed}

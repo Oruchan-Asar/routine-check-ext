@@ -437,7 +437,7 @@ export function Popup() {
 
         <div className="space-y-2">
           {routines.map((routine) => (
-            <Card key={routine.id} className="relative">
+            <Card key={routine.id} className="relative border-gray-400">
               <CardContent className="p-4">
                 {editingRoutine === routine.id ? (
                   <div className="space-y-2">

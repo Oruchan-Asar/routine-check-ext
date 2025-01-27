@@ -8,6 +8,7 @@ import { useRoutines } from "../../hooks/useRoutines";
 import { RoutineModal } from "@/components/routines/RoutineModal";
 import { RoutineItem } from "@/components/routines/RoutineItem";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function RoutinesPage() {
   const { status } = useSession();
@@ -108,15 +109,17 @@ export default function RoutinesPage() {
         </p>
       ) : (
         <div className="space-y-4">
-          {routines.map((routine) => (
-            <RoutineItem
-              key={routine.id}
-              routine={routine}
-              onToggle={toggleRoutine}
-              onEdit={handleEdit}
-              onDelete={deleteRoutine}
-            />
-          ))}
+          <ScrollArea className="h-[500px] pr-4">
+            {routines.map((routine) => (
+              <RoutineItem
+                key={routine.id}
+                routine={routine}
+                onToggle={toggleRoutine}
+                onEdit={handleEdit}
+                onDelete={deleteRoutine}
+              />
+            ))}
+          </ScrollArea>
         </div>
       )}
 
