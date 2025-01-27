@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "./ModeToggle";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Navigation() {
   const router = useRouter();
@@ -38,9 +39,11 @@ export default function Navigation() {
             <Button onClick={handleLogout} variant="outline">
               Logout
             </Button>
-            <div className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center">
-              <FaUser size={20} />
-            </div>
+            <Avatar>
+              <AvatarFallback>
+                <FaUser className="h-5 w-5" />
+              </AvatarFallback>
+            </Avatar>
           </div>
         ) : (
           <>
