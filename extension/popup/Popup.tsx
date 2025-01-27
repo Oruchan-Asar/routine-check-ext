@@ -99,7 +99,9 @@ export function Popup() {
   const syncWithWebApp = async () => {
     if (!isAuthenticated) {
       // Open the login page in a new tab if not authenticated
-      const url = process.env.NEXTAUTH_URL || "http://localhost:3000";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+      // remove the /api from the url
+      const url = apiUrl.replace("/api", "");
       chrome.tabs.create({ url: `${url}/login` }, (tab) => {
         // Add listener for tab updates
         chrome.tabs.onUpdated.addListener(async function listener(tabId, info) {
