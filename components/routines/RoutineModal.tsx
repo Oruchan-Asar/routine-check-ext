@@ -2,6 +2,13 @@ import React from "react";
 import { RoutineFormData } from "@/types/routines";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface RoutineModalProps {
   isOpen: boolean;
@@ -22,12 +29,12 @@ export const RoutineModal: React.FC<RoutineModalProps> = ({
   onClose,
   submitLabel,
 }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">{title}</h2>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
         <form onSubmit={onSubmit}>
           <div className="space-y-4">
             <div>
@@ -54,16 +61,16 @@ export const RoutineModal: React.FC<RoutineModalProps> = ({
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 mt-6">
+          <DialogFooter className="mt-6">
             <Button type="button" onClick={onClose} variant="ghost">
               Cancel
             </Button>
             <Button type="submit" variant="default">
               {submitLabel}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
