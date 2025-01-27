@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface RoutineItemProps {
   routine: Routine;
@@ -29,57 +30,59 @@ export const RoutineItem: React.FC<RoutineItemProps> = ({
   onDelete,
 }) => {
   return (
-    <div className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-      <Checkbox
-        checked={routine.completed}
-        onCheckedChange={() => onToggle(routine.id)}
-      />
-      <div className="flex-1">
-        <h3
-          className={`font-medium ${
-            routine.completed ? "line-through text-gray-500" : ""
-          }`}
-        >
-          {routine.title}
-        </h3>
-        {routine.url && (
-          <Link
-            href={routine.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-500 hover:text-blue-600"
+    <Card>
+      <CardContent className="flex items-center gap-4 p-6">
+        <Checkbox
+          checked={routine.completed}
+          onCheckedChange={() => onToggle(routine.id)}
+        />
+        <div className="flex-1">
+          <h3
+            className={`font-medium ${
+              routine.completed ? "line-through text-gray-500" : ""
+            }`}
           >
-            {routine.url}
-          </Link>
-        )}
-      </div>
-      <div className="flex gap-2">
-        <Button onClick={() => onEdit(routine)} variant="ghost" size="sm">
-          Edit
-        </Button>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm">
-              Delete
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the
-                routine.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => onDelete(routine.id)}>
+            {routine.title}
+          </h3>
+          {routine.url && (
+            <Link
+              href={routine.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-500 hover:text-blue-600"
+            >
+              {routine.url}
+            </Link>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => onEdit(routine)} variant="ghost" size="sm">
+            Edit
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
                 Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </div>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the
+                  routine.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(routine.id)}>
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
