@@ -2,8 +2,9 @@
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navigation from "../components/Navigation";
-import AuthProvider from "../components/AuthProvider";
+import Navigation from "@/components/Navigation";
+import AuthProvider from "@/components/AuthProvider";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -21,14 +22,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable}`}
         suppressHydrationWarning
       >
         <AuthProvider>
-          <Navigation />
-          {children}
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Navigation />
+            {children}
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>

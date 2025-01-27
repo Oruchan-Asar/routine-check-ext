@@ -6,6 +6,7 @@ import { FaUser } from "react-icons/fa";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "./ModeToggle";
 
 export default function Navigation() {
   const router = useRouter();
@@ -31,6 +32,7 @@ export default function Navigation() {
         />
       </Link>
       <div className="flex gap-4">
+        <ModeToggle />
         {status === "authenticated" && session ? (
           <div className="flex items-center gap-4">
             <Button onClick={handleLogout} variant="outline">
