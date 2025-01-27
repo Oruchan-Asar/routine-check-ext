@@ -1,6 +1,7 @@
 import React from "react";
 import { RoutineFormData } from "@/types/routines";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface RoutineModalProps {
   isOpen: boolean;
@@ -31,12 +32,11 @@ export const RoutineModal: React.FC<RoutineModalProps> = ({
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Title</label>
-              <input
+              <Input
                 type="text"
                 name="title"
                 value={formData.title || ""}
                 onChange={onChange}
-                className="w-full p-2 border rounded-lg text-gray-900 dark:text-gray-900"
                 autoFocus
                 required
               />
@@ -45,13 +45,12 @@ export const RoutineModal: React.FC<RoutineModalProps> = ({
               <label className="block text-sm font-medium mb-1">
                 URL (optional)
               </label>
-              <input
+              <Input
                 type="url"
                 name="url"
                 value={formData.url || ""}
                 onChange={onChange}
                 placeholder="https://example.com"
-                className="w-full p-2 border rounded-lg text-gray-900 dark:text-gray-900"
               />
             </div>
           </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,20 +51,18 @@ export default function LoginPage() {
         )}
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <input
+            <Input
               type="email"
               placeholder="Email"
-              className="w-full p-2 border rounded text-gray-900 bg-white"
               value={formData.email}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
               autoComplete="email"
             />
-            <input
+            <Input
               type="password"
               placeholder="Password"
-              className="w-full p-2 border rounded text-gray-900 bg-white"
               value={formData.password}
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })

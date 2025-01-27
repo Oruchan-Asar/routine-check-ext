@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface ExtensionRoutine {
   id: string;
@@ -74,29 +75,26 @@ export default function SignupPage() {
         )}
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <input
+            <Input
               type="text"
               placeholder="Name"
-              className="w-full p-2 border rounded text-gray-900 bg-white"
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
             />
-            <input
+            <Input
               type="email"
               placeholder="Email"
-              className="w-full p-2 border rounded text-gray-900 bg-white"
               value={formData.email}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
               autoComplete="email"
             />
-            <input
+            <Input
               type="password"
               placeholder="Password"
-              className="w-full p-2 border rounded text-gray-900 bg-white"
               value={formData.password}
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })

@@ -2,6 +2,7 @@ import React from "react";
 import { Routine } from "../../types/routines";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface RoutineItemProps {
   routine: Routine;
@@ -18,11 +19,9 @@ export const RoutineItem: React.FC<RoutineItemProps> = ({
 }) => {
   return (
     <div className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-      <input
-        type="checkbox"
+      <Checkbox
         checked={routine.completed}
-        onChange={() => onToggle(routine.id)}
-        className="h-5 w-5 rounded border-gray-300"
+        onCheckedChange={() => onToggle(routine.id)}
       />
       <div className="flex-1">
         <h3
