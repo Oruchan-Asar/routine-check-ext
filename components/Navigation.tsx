@@ -8,6 +8,12 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "./ModeToggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Navigation() {
   const router = useRouter();
@@ -39,11 +45,23 @@ export default function Navigation() {
             <Button onClick={handleLogout} variant="outline">
               Logout
             </Button>
-            <Avatar>
-              <AvatarFallback>
-                <FaUser className="h-5 w-5" />
-              </AvatarFallback>
-            </Avatar>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="cursor-pointer">
+                  <AvatarFallback>
+                    <FaUser className="h-5 w-5" />
+                  </AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => router.push("/routines")}>
+                  Routines
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/calendar")}>
+                  Calendar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : (
           <>
