@@ -8,6 +8,12 @@ import {
 } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -86,13 +92,15 @@ export default function MainContent() {
 
 function FeatureCard({ icon, title, description, onClick }: FeatureCardProps) {
   return (
-    <div
-      className="p-6 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-all cursor-pointer"
+    <Card
+      className="hover:border-gray-300 dark:hover:border-gray-700 transition-all cursor-pointer"
       onClick={onClick}
     >
-      <div className="text-primary mb-4">{icon}</div>
-      <h3 className="text-lg font-semibold mb-2">{title}</h3>
-      <p className="text-gray-600 dark:text-gray-400">{description}</p>
-    </div>
+      <CardHeader>
+        <div className="text-primary mb-2">{icon}</div>
+        <CardTitle className="mb-2">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+    </Card>
   );
 }
