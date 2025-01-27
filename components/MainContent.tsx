@@ -82,10 +82,6 @@ export default function MainContent() {
           </Link>
         </div>
       </main>
-
-      <footer className="row-start-3 text-center text-sm text-gray-600 dark:text-gray-400">
-        <p>Built with Next.js, TypeScript, and Tailwind CSS</p>
-      </footer>
     </div>
   );
 }
