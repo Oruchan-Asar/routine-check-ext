@@ -126,8 +126,14 @@
   /* 2 */
   border-style: solid;
   /* 2 */
-  border-color: #27272a;
+  border-color: #e5e7eb;
   /* 2 */
+}
+
+.dark *,
+.dark ::before,
+.dark ::after {
+  border-color: #27272a;
 }
 
 ::before,
