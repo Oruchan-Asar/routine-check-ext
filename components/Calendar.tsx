@@ -5,6 +5,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 
 interface Routine {
   id: string;
@@ -27,6 +28,7 @@ export default function Calendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -72,14 +74,14 @@ export default function Calendar() {
 
   if (status === "loading") {
     return (
-      <div className="h-[700px] bg-white p-6 rounded-lg shadow flex items-center justify-center">
+      <div className="h-[700px] bg-white dark:bg-gray-800 p-6 rounded-lg shadow flex items-center justify-center">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="h-[700px] bg-white p-6 rounded-lg shadow">
+    <div className="h-[700px] bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
       <FullCalendar
         plugins={[dayGridPlugin]}
         initialView="dayGridMonth"
@@ -90,6 +92,9 @@ export default function Calendar() {
           center: "title",
           right: "dayGridMonth",
         }}
+        themeSystem="standard"
+        dayCellClassNames={theme === "dark" ? "dark-theme-cell" : ""}
+        viewClassNames={theme === "dark" ? "dark-theme-calendar" : ""}
       />
     </div>
   );
