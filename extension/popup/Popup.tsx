@@ -66,6 +66,7 @@ export function Popup() {
 
   const checkAuthStatus = async () => {
     try {
+      setIsAuthenticated(true);
       // Get the next-auth.session-token cookie
       const cookie = await new Promise<ChromeCookie | null>((resolve) => {
         chrome.cookies.get(

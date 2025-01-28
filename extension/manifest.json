@@ -12,13 +12,16 @@
     }
   },
   "permissions": ["storage", "cookies", "tabs"],
-  "host_permissions": ["http://localhost:3000/*"],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "https://www.routinest.com/*"
+  ],
   "background": {
     "service_worker": "background.ts"
   },
   "content_scripts": [
     {
-      "matches": ["http://localhost:3000/*"],
+      "matches": ["http://localhost:3000/*", "https://www.routinest.com/*"],
       "js": ["content.ts"]
     }
   ],
