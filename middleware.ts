@@ -4,6 +4,18 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const origin = request.headers.get("origin") || "";
 
+  // Check if user is authenticated by looking for the auth token
+  const authToken = request.cookies.get("next-auth.session-token");
+
+  // If user is authenticated and trying to access login or signup pages, redirect to home
+  if (
+    authToken &&
+    (request.nextUrl.pathname === "/login" ||
+      request.nextUrl.pathname === "/signup")
+  ) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
   // Check if the request is from your Chrome extension
   const isExtensionRequest = origin.startsWith("chrome-extension://");
 
@@ -48,5 +60,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/api/:path*",
+  matcher: ["/api/:path*", "/login", "/signup"],
 };

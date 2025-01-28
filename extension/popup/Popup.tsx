@@ -100,6 +100,11 @@ export function Popup() {
     if (!isAuthenticated) {
       // Open the login page in a new tab if not authenticated
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+      console.log(
+        "process.env.NEXT_PUBLIC_API_URL",
+        process.env.NEXT_PUBLIC_API_URL
+      );
+      console.log("apiUrl", apiUrl);
       // remove the /api from the url
       const url = apiUrl.replace("/api", "");
       chrome.tabs.create({ url: `${url}/login` }, (tab) => {
