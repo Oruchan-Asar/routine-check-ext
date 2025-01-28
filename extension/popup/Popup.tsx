@@ -7,6 +7,7 @@ import { Checkbox } from "../components/ui/checkbox";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { ModeToggle } from "../components/mode-toggle";
 import { cn } from "../lib/utils";
+import config from "../config";
 
 interface Routine {
   id: string;
@@ -69,23 +70,20 @@ export function Popup() {
       const cookie = await new Promise<ChromeCookie | null>((resolve) => {
         chrome.cookies.get(
           {
-            url: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
+            url: config.API_URL,
             name: "next-auth.session-token",
           },
           (cookie) => resolve(cookie)
         );
       });
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/check`,
-        {
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-            Cookie: cookie ? `next-auth.session-token=${cookie.value}` : "",
-          },
-        }
-      );
+      const response = await fetch(`${config.API_URL}/auth/check`, {
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          Cookie: cookie ? `next-auth.session-token=${cookie.value}` : "",
+        },
+      });
 
       const data = await response.json();
 
@@ -99,13 +97,7 @@ export function Popup() {
   const syncWithWebApp = async () => {
     if (!isAuthenticated) {
       // Open the login page in a new tab if not authenticated
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-      console.log(
-        "process.env.NEXT_PUBLIC_API_URL",
-        process.env.NEXT_PUBLIC_API_URL
-      );
-      console.log("apiUrl", apiUrl);
-      // remove the /api from the url
+      const apiUrl = config.API_URL;
       const url = apiUrl.replace("/api", "");
       chrome.tabs.create({ url: `${url}/login` }, (tab) => {
         // Add listener for tab updates
@@ -133,12 +125,9 @@ export function Popup() {
     setIsSyncing(true);
     try {
       // Get web app routines
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/routines`,
-        {
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${config.API_URL}/routines`, {
+        credentials: "include",
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch routines from web app");
@@ -221,19 +210,16 @@ export function Popup() {
         );
         if (!routineToUpdate) return;
 
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/routines/${id}`,
-          {
-            method: "PATCH",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              completed: routineToUpdate.completed,
-            }),
-          }
-        );
+        const response = await fetch(`${config.API_URL}/routines/${id}`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            completed: routineToUpdate.completed,
+          }),
+        });
 
         if (!response.ok) {
           console.error(
@@ -273,13 +259,10 @@ export function Popup() {
     // If authenticated, also delete from database
     if (isAuthenticated) {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/routines/${id}`,
-          {
-            method: "DELETE",
-            credentials: "include",
-          }
-        );
+        const response = await fetch(`${config.API_URL}/routines/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
 
         if (!response.ok) {
           console.error(
