@@ -501,7 +501,7 @@ export function Popup() {
   return (
     <div className="w-[350px] p-4 bg-background text-foreground">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold">Routine Check</h1>
+        <h1 className="text-xl font-semibold">Routinest</h1>
         <div className="flex items-center gap-2">
           <ModeToggle />
           <Button
