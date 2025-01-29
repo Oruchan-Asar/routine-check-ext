@@ -279,13 +279,7 @@ export function Popup() {
       synced: false,
     };
 
-    const updatedRoutines = [...routines, routine];
-
-    // Update local storage first for immediate feedback
-    setRoutines(updatedRoutines);
-    chrome.storage.local.set({ currentRoutines: updatedRoutines });
-
-    // If authenticated, sync with database
+    // If authenticated, sync with database first
     if (isAuthenticated) {
       try {
         const response = await fetch(`${config.API_URL}/routines`, {
@@ -303,20 +297,37 @@ export function Popup() {
 
         if (!response.ok) {
           console.error("Failed to add routine to database:", response.status);
-          // Revert local changes if database update fails
-          const revertedRoutines = routines;
-          chrome.storage.local.set({ currentRoutines: revertedRoutines });
-          setRoutines(revertedRoutines);
-          return;
+          // Add routine locally if database update fails
+          const updatedRoutines = [...routines, routine];
+          chrome.storage.local.set({ currentRoutines: updatedRoutines });
+          setRoutines(updatedRoutines);
+        } else {
+          // Get the routine from the database response and use that instead
+          const dbRoutine = await response.json();
+          const syncedRoutine: Routine = {
+            id: dbRoutine.id,
+            text: dbRoutine.title,
+            url: dbRoutine.url,
+            completed: dbRoutine.completed,
+            createdAt: dbRoutine.createdAt,
+            synced: true,
+          };
+          const updatedRoutines = [...routines, syncedRoutine];
+          chrome.storage.local.set({ currentRoutines: updatedRoutines });
+          setRoutines(updatedRoutines);
         }
       } catch (error) {
         console.error("Error adding routine to database:", error);
-        // Revert local changes if database update fails
-        const revertedRoutines = routines;
-        chrome.storage.local.set({ currentRoutines: revertedRoutines });
-        setRoutines(revertedRoutines);
-        return;
+        // Add routine locally if database update fails
+        const updatedRoutines = [...routines, routine];
+        chrome.storage.local.set({ currentRoutines: updatedRoutines });
+        setRoutines(updatedRoutines);
       }
+    } else {
+      // If not authenticated, just add locally
+      const updatedRoutines = [...routines, routine];
+      chrome.storage.local.set({ currentRoutines: updatedRoutines });
+      setRoutines(updatedRoutines);
     }
 
     setNewRoutine("");
@@ -626,19 +637,28 @@ export function Popup() {
                         onCheckedChange={() => toggleRoutine(routine.id)}
                         id={routine.id}
                       />
-                      <div className="flex-1">
+                      <div className="flex-1 w-4">
                         <label
                           htmlFor={routine.id}
                           className={cn(
-                            "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+                            "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 break-words block",
                             routine.completed && "line-through opacity-50"
                           )}
                         >
                           {routine.text}
                         </label>
                         {routine.url && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {routine.url}
+                          <p
+                            className="text-xs text-muted-foreground mt-1 overflow-hidden text-ellipsis whitespace-nowrap"
+                            title={routine.url}
+                          >
+                            <a
+                              href={routine.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {routine.url}
+                            </a>
                           </p>
                         )}
                       </div>
