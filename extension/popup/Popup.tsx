@@ -15,6 +15,7 @@ interface Routine {
   url?: string;
   completed: boolean;
   createdAt: string;
+  synced: boolean;
 }
 
 interface WebAppRoutine {
@@ -63,6 +64,81 @@ export function Popup() {
     // Check authentication status
     checkAuthStatus();
   }, []);
+
+  useEffect(() => {
+    const localRoutines = routines.filter((routine) => !routine.synced);
+
+    if (isAuthenticated && localRoutines.length > 0) {
+      const syncLocalRoutines = async () => {
+        setIsSyncing(true);
+        try {
+          // First sync local routines to the database
+          for (const routine of localRoutines) {
+            try {
+              const response = await fetch(`${config.API_URL}/routines`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  title: routine.text,
+                  url: routine.url,
+                  completed: routine.completed,
+                }),
+              });
+
+              if (!response.ok) {
+                console.error(
+                  "Failed to sync local routine to database:",
+                  routine.text
+                );
+              }
+            } catch (error) {
+              console.error("Error syncing local routine to database:", error);
+            }
+          }
+
+          // Then fetch all routines from the database
+          const response = await fetch(`${config.API_URL}/routines`, {
+            credentials: "include",
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch routines from web app");
+          }
+
+          const webAppRoutines = (await response.json()) as WebAppRoutine[];
+
+          // Convert web app routines to extension format and mark them as synced
+          const convertedWebAppRoutines = webAppRoutines.map(
+            (routine: WebAppRoutine) => ({
+              id: routine.id,
+              text: routine.title,
+              url: routine.url,
+              completed: routine.completed,
+              createdAt: routine.createdAt,
+              synced: true,
+            })
+          );
+
+          // Update local storage and state with web app routines
+          chrome.storage.local.set(
+            { currentRoutines: convertedWebAppRoutines },
+            () => {
+              setRoutines(convertedWebAppRoutines);
+            }
+          );
+        } catch (error) {
+          console.error("Error syncing with web app:", error);
+        } finally {
+          setIsSyncing(false);
+        }
+      };
+
+      syncLocalRoutines();
+    }
+  }, [isAuthenticated, routines]);
 
   const checkAuthStatus = async () => {
     try {
@@ -125,7 +201,36 @@ export function Popup() {
 
     setIsSyncing(true);
     try {
-      // Get web app routines
+      // First, sync local routines to the database if any exist
+      const localRoutines = routines.filter((routine) => !routine.synced);
+
+      for (const routine of localRoutines) {
+        try {
+          const response = await fetch(`${config.API_URL}/routines`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              title: routine.text,
+              url: routine.url,
+              completed: routine.completed,
+            }),
+          });
+
+          if (!response.ok) {
+            console.error(
+              "Failed to sync local routine to database:",
+              routine.text
+            );
+          }
+        } catch (error) {
+          console.error("Error syncing local routine to database:", error);
+        }
+      }
+
+      // Then fetch all routines from the database
       const response = await fetch(`${config.API_URL}/routines`, {
         credentials: "include",
       });
@@ -136,7 +241,7 @@ export function Popup() {
 
       const webAppRoutines = (await response.json()) as WebAppRoutine[];
 
-      // Convert web app routines to extension format
+      // Convert web app routines to extension format and mark them as synced
       const convertedWebAppRoutines = webAppRoutines.map(
         (routine: WebAppRoutine) => ({
           id: routine.id,
@@ -144,6 +249,7 @@ export function Popup() {
           url: routine.url,
           completed: routine.completed,
           createdAt: routine.createdAt,
+          synced: true,
         })
       );
 
@@ -170,11 +276,49 @@ export function Popup() {
       url: newUrl.trim() || undefined,
       completed: false,
       createdAt: new Date().toISOString(),
+      synced: false,
     };
 
     const updatedRoutines = [...routines, routine];
+
+    // Update local storage first for immediate feedback
     setRoutines(updatedRoutines);
     chrome.storage.local.set({ currentRoutines: updatedRoutines });
+
+    // If authenticated, sync with database
+    if (isAuthenticated) {
+      try {
+        const response = await fetch(`${config.API_URL}/routines`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: routine.text,
+            url: routine.url,
+            completed: routine.completed,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error("Failed to add routine to database:", response.status);
+          // Revert local changes if database update fails
+          const revertedRoutines = routines;
+          chrome.storage.local.set({ currentRoutines: revertedRoutines });
+          setRoutines(revertedRoutines);
+          return;
+        }
+      } catch (error) {
+        console.error("Error adding routine to database:", error);
+        // Revert local changes if database update fails
+        const revertedRoutines = routines;
+        chrome.storage.local.set({ currentRoutines: revertedRoutines });
+        setRoutines(revertedRoutines);
+        return;
+      }
+    }
+
     setNewRoutine("");
     setNewUrl("");
     setShowInput(false);
@@ -284,18 +428,65 @@ export function Popup() {
   };
 
   const editRoutine = async (id: string, newText: string) => {
-    const updatedRoutines = routines.map((routine) =>
-      routine.id === id
-        ? {
-            ...routine,
-            text: newText,
+    // If authenticated, sync with database first
+    if (isAuthenticated) {
+      try {
+        const response = await fetch(`${config.API_URL}/routines/${id}`, {
+          method: "PUT",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: newText,
             url: editUrl.trim() || undefined,
-          }
-        : routine
-    );
+          }),
+        });
 
-    setRoutines(updatedRoutines);
-    chrome.storage.local.set({ currentRoutines: updatedRoutines });
+        if (!response.ok) {
+          console.error(
+            "Failed to update routine in database:",
+            response.status
+          );
+          return;
+        }
+
+        // Get the updated routine from the response
+        const updatedRoutine = await response.json();
+
+        // Update local state with the response from server
+        const updatedRoutines = routines.map((routine) =>
+          routine.id === id
+            ? {
+                ...routine,
+                text: updatedRoutine.title,
+                url: updatedRoutine.url,
+              }
+            : routine
+        );
+
+        setRoutines(updatedRoutines);
+        chrome.storage.local.set({ currentRoutines: updatedRoutines });
+      } catch (error) {
+        console.error("Error updating routine in database:", error);
+        return;
+      }
+    } else {
+      // If not authenticated, just update locally
+      const updatedRoutines = routines.map((routine) =>
+        routine.id === id
+          ? {
+              ...routine,
+              text: newText,
+              url: editUrl.trim() || undefined,
+            }
+          : routine
+      );
+
+      setRoutines(updatedRoutines);
+      chrome.storage.local.set({ currentRoutines: updatedRoutines });
+    }
+
     setEditingRoutine(null);
     setEditText("");
     setEditUrl("");
@@ -346,7 +537,7 @@ export function Popup() {
                 value={newRoutine}
                 onChange={(e) => setNewRoutine(e.target.value)}
                 className="mb-2"
-                onKeyPress={(e) => {
+                onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     addRoutine();
                   }
@@ -357,7 +548,7 @@ export function Popup() {
                 value={newUrl}
                 onChange={(e) => setNewUrl(e.target.value)}
                 className="mb-2"
-                onKeyPress={(e) => {
+                onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     addRoutine();
                   }
@@ -388,83 +579,92 @@ export function Popup() {
         )}
 
         <div className="space-y-2">
-          {routines.map((routine) => (
-            <Card key={routine.id} className="relative">
-              <CardContent className="p-4">
-                {editingRoutine === routine.id ? (
-                  <div className="space-y-2">
-                    <Input
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      className="mb-2"
-                    />
-                    <Input
-                      value={editUrl}
-                      onChange={(e) => setEditUrl(e.target.value)}
-                      placeholder="URL (optional)"
-                      className="mb-2"
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => editRoutine(routine.id, editText)}
-                        className="flex-1"
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setEditingRoutine(null)}
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
+          {routines.length === 0 && !showInput ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                No routines yet. Click &ldquo;Add New Routine&rdquo; to get
+                started!
+              </p>
+            </div>
+          ) : (
+            routines.map((routine) => (
+              <Card key={routine.id} className="relative">
+                <CardContent className="p-4">
+                  {editingRoutine === routine.id ? (
+                    <div className="space-y-2">
+                      <Input
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="mb-2"
+                      />
+                      <Input
+                        value={editUrl}
+                        onChange={(e) => setEditUrl(e.target.value)}
+                        placeholder="URL (optional)"
+                        className="mb-2"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => editRoutine(routine.id, editText)}
+                          className="flex-1"
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setEditingRoutine(null)}
+                          className="flex-1"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={routine.completed}
-                      onCheckedChange={() => toggleRoutine(routine.id)}
-                      id={routine.id}
-                    />
-                    <div className="flex-1">
-                      <label
-                        htmlFor={routine.id}
-                        className={cn(
-                          "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-                          routine.completed && "line-through opacity-50"
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={routine.completed}
+                        onCheckedChange={() => toggleRoutine(routine.id)}
+                        id={routine.id}
+                      />
+                      <div className="flex-1">
+                        <label
+                          htmlFor={routine.id}
+                          className={cn(
+                            "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+                            routine.completed && "line-through opacity-50"
+                          )}
+                        >
+                          {routine.text}
+                        </label>
+                        {routine.url && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {routine.url}
+                          </p>
                         )}
-                      >
-                        {routine.text}
-                      </label>
-                      {routine.url && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {routine.url}
-                        </p>
-                      )}
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEditing(routine)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteRoutine(routine.id)}
+                          className="text-destructive"
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => startEditing(routine)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteRoutine(routine.id)}
-                        className="text-destructive"
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
       </ScrollArea>
     </div>
