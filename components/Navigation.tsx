@@ -28,7 +28,7 @@ export default function Navigation() {
     <nav className="fixed top-0 left-0 right-0 p-8 z-50 flex justify-between items-center">
       <Link
         href="/"
-        className="flex items-center w-8 h-8 hover:opacity-80 transition-opacity text-white"
+        className="flex items-center w-8 h-8 hover:opacity-80 transition-opacity text-white gap-2"
       >
         <Image
           src="/logo.svg"
@@ -37,6 +37,7 @@ export default function Navigation() {
           height={32}
           priority
         />
+        <span className="text-xl">Routinest</span>
       </Link>
       <div className="flex gap-4">
         <ModeToggle />
