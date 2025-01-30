@@ -14,6 +14,8 @@ export function middleware(request: NextRequest) {
       request.nextUrl.pathname === "/signup")
   ) {
     return NextResponse.redirect(new URL("/", request.url));
+  } else if (!authToken && request.nextUrl.pathname === "/change-password") {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // Check if the request is from your Chrome extension
@@ -60,5 +62,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/login", "/signup"],
+  matcher: ["/api/:path*", "/login", "/signup", "/change-password"],
 };

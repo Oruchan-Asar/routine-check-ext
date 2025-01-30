@@ -60,6 +60,11 @@ export default function Navigation() {
                 <DropdownMenuItem onClick={() => router.push("/calendar")}>
                   Calendar
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => router.push("/change-password")}
+                >
+                  Change Password
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
