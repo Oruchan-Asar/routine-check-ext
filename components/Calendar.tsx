@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 
 interface Routine {
@@ -26,16 +25,10 @@ interface CalendarEvent {
 
 export default function Calendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { status } = useSession();
   const { theme } = useTheme();
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-      return;
-    }
-
     if (status !== "authenticated") {
       return;
     }
@@ -70,7 +63,7 @@ export default function Calendar() {
     };
 
     fetchRoutines();
-  }, [status, router, session]);
+  }, [status]);
 
   if (status === "loading") {
     return (

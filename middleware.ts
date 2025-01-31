@@ -7,8 +7,10 @@ export function middleware(request: NextRequest) {
   // Check if user is authenticated by looking for the auth token
   const authToken = request.cookies.get("next-auth.session-token");
 
-  // If user is authenticated and trying to access login or signup pages, redirect to home
-  if (
+  // If user is not authenticated and trying to access protected routes, redirect to login
+  if (!authToken && request.nextUrl.pathname === "/calendar") {
+    return NextResponse.redirect(new URL("/login", request.url));
+  } else if (
     authToken &&
     (request.nextUrl.pathname === "/login" ||
       request.nextUrl.pathname === "/signup")
@@ -62,5 +64,11 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/login", "/signup", "/change-password"],
+  matcher: [
+    "/api/:path*",
+    "/login",
+    "/signup",
+    "/change-password",
+    "/calendar",
+  ],
 };

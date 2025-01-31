@@ -1,4 +1,10 @@
 import React from "react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Calendar | Routine Check",
+  description: "View your routines and tasks in a calendar format",
+};
 
 export default function CalendarLayout({
   children,
