@@ -9,7 +9,8 @@
     "build:css": "tailwindcss -i ./extension/styles/globals.css -o ./extension/dist/output.css",
     "build:all": "npm run build:css && npm run build:extension",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check-metadata": "node scripts/check-metadata.js"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",

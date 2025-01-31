@@ -1,22 +1,50 @@
-"use client";
-
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
-import AuthProvider from "@/components/AuthProvider";
-import { ThemeProvider } from "@/components/ui/theme-provider";
-import Footer from "@/components/Footer";
-import { Analytics } from "@vercel/analytics/react";
+import type { Metadata } from "next";
+import ClientLayout from "./ClientLayout";
 
-const geistSans = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-});
+export const metadata: Metadata = {
+  title: "Routine Check Extension",
+  description:
+    "Manage your daily routines and sync them with your calendar seamlessly",
+  openGraph: {
+    title: "Routine Check Extension 📝",
+    description:
+      "Manage your daily routines and sync them with your calendar seamlessly",
+    type: "website",
+    url: "https://www.routinest.com",
+    siteName: "Routine Check",
+    locale: "en_US",
+    images: [
+      {
+        url: "/images/opengraph-image.png",
+        width: 128,
+        height: 128,
+        alt: "Routine Check Extension - Manage your daily routines",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Routine Check Extension 📝",
+    description:
+      "Manage your daily routines and sync them with your calendar seamlessly",
+    images: ["/images/twitter-image.png"],
+    creator: "@oruchanasar",
+    site: "@routinest",
+  },
+  keywords: [
+    "routine management",
+    "calendar integration",
+    "chrome extension",
+    "task management",
+    "daily routines",
+    "productivity",
+    "auto sync",
+    "routine tracking",
+  ],
+  authors: [{ name: "Oruchan Asar", url: "https://oruchanasar.com" }],
+  category: "Productivity",
+};
 
 export default function RootLayout({
   children,
@@ -25,24 +53,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable}`}
-        suppressHydrationWarning
-      >
-        <AuthProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Navigation />
-            {children}
-            <Analytics />
-            <Footer />
-          </ThemeProvider>
-        </AuthProvider>
-      </body>
+      <ClientLayout>{children}</ClientLayout>
     </html>
   );
 }
