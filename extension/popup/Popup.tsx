@@ -27,6 +27,12 @@ interface WebAppRoutine {
   updatedAt: string;
 }
 
+interface StorageData {
+  currentRoutines?: Routine[];
+  routineHistory?: string[];
+  deletedRoutines?: string[];
+}
+
 interface ChromeCookie {
   name: string;
   value: string;
@@ -55,9 +61,14 @@ export function Popup() {
   useEffect(() => {
     // Load routines and history from storage
     chrome.storage.local.get(
-      ["currentRoutines", "routineHistory"],
-      (result) => {
-        setRoutines(result.currentRoutines || []);
+      ["currentRoutines", "routineHistory", "deletedRoutines"],
+      (result: StorageData) => {
+        // Filter out deleted routines
+        const deletedRoutineIds = new Set(result.deletedRoutines || []);
+        const filteredRoutines = (result.currentRoutines || []).filter(
+          (routine: Routine) => !deletedRoutineIds.has(routine.id)
+        );
+        setRoutines(filteredRoutines);
       }
     );
 
@@ -66,36 +77,81 @@ export function Popup() {
   }, []);
 
   useEffect(() => {
-    const localRoutines = routines.filter((routine) => !routine.synced);
-
-    if (isAuthenticated && localRoutines.length > 0) {
+    if (isAuthenticated) {
       const syncLocalRoutines = async () => {
         setIsSyncing(true);
         try {
-          // First sync local routines to the database
-          for (const routine of localRoutines) {
-            try {
-              const response = await fetch(`${config.API_URL}/routines`, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  title: routine.text,
-                  url: routine.url,
-                  completed: routine.completed,
-                }),
-              });
+          // Get current state from storage first
+          const storageData = await chrome.storage.local.get([
+            "currentRoutines",
+            "deletedRoutines",
+          ]);
+          const currentRoutines = storageData.currentRoutines || [];
+          const localRoutines = currentRoutines.filter(
+            (routine: Routine) => !routine.synced
+          );
+          const deletedRoutines = storageData.deletedRoutines || [];
 
-              if (!response.ok) {
+          if (deletedRoutines.length > 0) {
+            for (const routineId of deletedRoutines) {
+              try {
+                const response = await fetch(
+                  `${config.API_URL}/routines/${routineId}`,
+                  {
+                    method: "DELETE",
+                    credentials: "include",
+                  }
+                );
+                if (!response.ok) {
+                  console.error(
+                    "Failed to delete routine:",
+                    routineId,
+                    "Status:",
+                    response.status
+                  );
+                } else {
+                }
+              } catch (error) {
                 console.error(
-                  "Failed to sync local routine to database:",
-                  routine.text
+                  "Error deleting routine from database:",
+                  routineId,
+                  error
                 );
               }
-            } catch (error) {
-              console.error("Error syncing local routine to database:", error);
+            }
+            // Clear deleted routines from storage after sync
+            await chrome.storage.local.set({ deletedRoutines: [] });
+          }
+
+          // Then sync local routines to the database if any exist
+          if (localRoutines.length > 0) {
+            for (const routine of localRoutines) {
+              try {
+                const response = await fetch(`${config.API_URL}/routines`, {
+                  method: "POST",
+                  credentials: "include",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    title: routine.text,
+                    url: routine.url,
+                    completed: routine.completed,
+                  }),
+                });
+
+                if (!response.ok) {
+                  console.error(
+                    "Failed to sync local routine to database:",
+                    routine.text
+                  );
+                }
+              } catch (error) {
+                console.error(
+                  "Error syncing local routine to database:",
+                  error
+                );
+              }
             }
           }
 
@@ -123,12 +179,10 @@ export function Popup() {
           );
 
           // Update local storage and state with web app routines
-          chrome.storage.local.set(
-            { currentRoutines: convertedWebAppRoutines },
-            () => {
-              setRoutines(convertedWebAppRoutines);
-            }
-          );
+          await chrome.storage.local.set({
+            currentRoutines: convertedWebAppRoutines,
+          });
+          setRoutines(convertedWebAppRoutines);
         } catch (error) {
           console.error("Error syncing with web app:", error);
         } finally {
@@ -138,7 +192,7 @@ export function Popup() {
 
       syncLocalRoutines();
     }
-  }, [isAuthenticated, routines]);
+  }, [isAuthenticated]);
 
   const checkAuthStatus = async () => {
     try {
@@ -201,6 +255,41 @@ export function Popup() {
 
     setIsSyncing(true);
     try {
+      // Get deleted routines from storage
+      const result = await chrome.storage.local.get(["deletedRoutines"]);
+      const deletedRoutines = result.deletedRoutines || [];
+
+      // Delete routines that were deleted while offline
+      for (const routineId of deletedRoutines) {
+        try {
+          const response = await fetch(
+            `${config.API_URL}/routines/${routineId}`,
+            {
+              method: "DELETE",
+              credentials: "include",
+            }
+          );
+          if (!response.ok) {
+            console.error(
+              "Failed to delete routine:",
+              routineId,
+              "Status:",
+              response.status
+            );
+          } else {
+          }
+        } catch (error) {
+          console.error(
+            "Error deleting routine from database:",
+            routineId,
+            error
+          );
+        }
+      }
+
+      // Clear deleted routines from storage after sync
+      await chrome.storage.local.set({ deletedRoutines: [] });
+
       // First, sync local routines to the database if any exist
       const localRoutines = routines.filter((routine) => !routine.synced);
 
@@ -412,7 +501,7 @@ export function Popup() {
     chrome.storage.local.set({ currentRoutines: updatedRoutines });
     setRoutines(updatedRoutines);
 
-    // If authenticated, also delete from database
+    // If authenticated, delete from database
     if (isAuthenticated) {
       try {
         const response = await fetch(`${config.API_URL}/routines/${id}`, {
@@ -435,6 +524,15 @@ export function Popup() {
         chrome.storage.local.set({ currentRoutines: routines });
         setRoutines(routines);
       }
+    } else {
+      // If not authenticated, store the deleted routine ID
+      const result = (await chrome.storage.local.get([
+        "deletedRoutines",
+      ])) as StorageData;
+      const deletedRoutines: string[] = result.deletedRoutines || [];
+      chrome.storage.local.set({
+        deletedRoutines: [...deletedRoutines, id],
+      });
     }
   };
 
