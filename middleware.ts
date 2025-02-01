@@ -5,7 +5,9 @@ export function middleware(request: NextRequest) {
   const origin = request.headers.get("origin") || "";
 
   // Check if user is authenticated by looking for the auth token
-  const authToken = request.cookies.get("next-auth.session-token");
+  const authToken =
+    request.cookies.get("next-auth.session-token") ||
+    request.cookies.get("__Secure-next-auth.session-token");
 
   // If user is not authenticated and trying to access protected routes, redirect to login
   if (!authToken && request.nextUrl.pathname === "/calendar") {
