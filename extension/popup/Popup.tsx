@@ -548,6 +548,7 @@ export function Popup() {
                 value={newRoutine}
                 onChange={(e) => setNewRoutine(e.target.value)}
                 className="mb-2"
+                autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     addRoutine();

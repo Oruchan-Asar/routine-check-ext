@@ -25,19 +25,22 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 p-8 z-50 flex justify-between items-center">
+    <nav className="fixed top-0 left-0 right-0 p-4 sm:p-8 z-50 flex justify-between items-center bg-background/80 backdrop-blur-sm border-b">
       <Link
         href="/"
         className="flex items-center w-8 h-8 hover:opacity-80 transition-opacity text-white gap-2"
       >
         <Image
           src="/logo.svg"
-          alt="Routine Check Logo"
+          alt="Routinest Logo"
+          className="invert dark:invert-0"
           width={32}
           height={32}
           priority
         />
-        <span className="text-xl">Routinest</span>
+        <span className="text-xl dark:text-white text-black hidden sm:block">
+          Routinest
+        </span>
       </Link>
       <div className="flex gap-4">
         <ModeToggle />
