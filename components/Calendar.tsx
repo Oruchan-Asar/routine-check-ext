@@ -29,10 +29,6 @@ export default function Calendar() {
   const { theme } = useTheme();
 
   useEffect(() => {
-    if (status !== "authenticated") {
-      return;
-    }
-
     const fetchRoutines = async () => {
       try {
         const response = await fetch("/api/routines/calendar");
