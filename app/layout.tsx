@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "Routine Check Extension",
   description:
     "Manage your daily routines and sync them with your calendar seamlessly",
+  verification: {
+    google:
+      "google-site-verification=f6nreqeGnRkxD6Kecv2vdpj_m3yRgNq1OmIw2QJr5LY",
+  },
   openGraph: {
     title: "Routine Check Extension 📝",
     description:
