@@ -64,7 +64,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <ClientLayout className={`${geistSans.variable} ${geistMono.variable}`}>
+      <ClientLayout
+        className={`${geistSans.variable} ${geistMono.variable} min-h-dvh flex flex-col justify-between items-center`}
+      >
         {children}
       </ClientLayout>
     </html>

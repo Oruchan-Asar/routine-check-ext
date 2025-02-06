@@ -36,9 +36,9 @@ export const RoutineItem: React.FC<RoutineItemProps> = ({
           checked={routine.completed}
           onCheckedChange={() => onToggle(routine.id)}
         />
-        <div className="flex-1">
+        <div className="flex-1 max-w-[160px] sm:max-w-full truncate">
           <h3
-            className={`font-medium ${
+            className={`font-medium text-wrap ${
               routine.completed ? "line-through text-gray-500" : ""
             }`}
           >

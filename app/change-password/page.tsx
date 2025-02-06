@@ -60,10 +60,11 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex items-center justify-center min-h-dvh">
       <div className="w-[350px] p-6 border rounded-lg shadow-lg">
         <div className="mb-6">
           <h2 className="text-2xl font-bold">Change Password</h2>
+
           <p className="text-gray-600">Update your password</p>
         </div>
         {error && (

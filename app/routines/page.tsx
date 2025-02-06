@@ -8,7 +8,6 @@ import { useRoutines } from "@/hooks/useRoutines";
 import { RoutineModal } from "@/components/routines/RoutineModal";
 import { RoutineItem } from "@/components/routines/RoutineItem";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function RoutinesPage() {
   const { status } = useSession();
@@ -84,7 +83,7 @@ export default function RoutinesPage() {
   }
 
   return (
-    <div className="p-4 max-w-4xl mx-auto mt-32">
+    <div className="max-w-4xl mx-auto w-full min-h-dvh mt-28 sm:mb-0 mb-16 p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">My Routines</h1>
         <div className="flex gap-2">
@@ -109,17 +108,15 @@ export default function RoutinesPage() {
         </p>
       ) : (
         <div className="space-y-4">
-          <ScrollArea className="h-[500px] pr-4">
-            {routines.map((routine) => (
-              <RoutineItem
-                key={routine.id}
-                routine={routine}
-                onToggle={toggleRoutine}
-                onEdit={handleEdit}
-                onDelete={deleteRoutine}
-              />
-            ))}
-          </ScrollArea>
+          {routines.map((routine) => (
+            <RoutineItem
+              key={routine.id}
+              routine={routine}
+              onToggle={toggleRoutine}
+              onEdit={handleEdit}
+              onDelete={deleteRoutine}
+            />
+          ))}
         </div>
       )}
 

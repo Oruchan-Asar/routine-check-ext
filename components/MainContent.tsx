@@ -26,7 +26,7 @@ export default function MainContent() {
   const router = useRouter();
 
   return (
-    <div className="grid grid-rows-[auto_1fr_auto] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+    <div className="p-8 mt-28 sm:mb-0 mb-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-8 row-start-2 items-center">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4">
