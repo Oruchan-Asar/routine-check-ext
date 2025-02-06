@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { FaSync } from "react-icons/fa";
 import { useSession } from "next-auth/react";
-import { Routine, RoutineFormData } from "../../types/routines";
-import { useRoutines } from "../../hooks/useRoutines";
+import { Routine, RoutineFormData } from "@/types/routines";
+import { useRoutines } from "@/hooks/useRoutines";
 import { RoutineModal } from "@/components/routines/RoutineModal";
 import { RoutineItem } from "@/components/routines/RoutineItem";
 import { Button } from "@/components/ui/button";

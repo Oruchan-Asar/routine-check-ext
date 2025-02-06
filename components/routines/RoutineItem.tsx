@@ -1,5 +1,5 @@
 import React from "react";
-import { Routine } from "../../types/routines";
+import { Routine } from "@/types/routines";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

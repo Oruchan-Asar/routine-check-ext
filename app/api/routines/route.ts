@@ -20,6 +20,10 @@ export async function GET() {
       return new NextResponse("User not found", { status: 404 });
     }
 
+    // Get today's date at midnight UTC
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
     const routines = await prisma.routine.findMany({
       where: { userId: user.id },
       select: {
@@ -30,9 +34,7 @@ export async function GET() {
         updatedAt: true,
         statuses: {
           where: {
-            date: {
-              gte: new Date(new Date().setHours(0, 0, 0, 0)),
-            },
+            date: today,
           },
         },
       },
