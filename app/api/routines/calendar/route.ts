@@ -53,6 +53,7 @@ export async function GET(request: Request) {
     const transformedRoutines = routines.map((routine) => ({
       id: routine.id,
       title: routine.title,
+      createdAt: routine.createdAt.toISOString(),
       statuses: routine.statuses.map((status) => ({
         id: status.id,
         date: status.date,
