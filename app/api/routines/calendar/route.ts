@@ -4,12 +4,21 @@ import { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = (await getServerSession(authOptions)) as Session;
+    const { searchParams } = new URL(request.url);
+    const start = searchParams.get("start");
+    const end = searchParams.get("end");
 
     if (!session?.user?.email) {
       return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    if (!start || !end) {
+      return new NextResponse("Start and end dates are required", {
+        status: 400,
+      });
     }
 
     const user = await prisma.user.findUnique({
@@ -26,6 +35,12 @@ export async function GET() {
       },
       include: {
         statuses: {
+          where: {
+            date: {
+              gte: new Date(start),
+              lte: new Date(end),
+            },
+          },
           select: {
             id: true,
             date: true,
