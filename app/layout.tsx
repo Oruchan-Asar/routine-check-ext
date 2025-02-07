@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/images/opengraph-image.png",
+        url: "/images/routinest-cover.png",
         width: 128,
         height: 128,
         alt: "Routine Check Extension - Manage your daily routines",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     title: "Routine Check Extension 📝",
     description:
       "Manage your daily routines and sync them with your calendar seamlessly",
-    images: ["/images/twitter-image.png"],
+    images: ["/images/routinest-cover.png"],
     creator: "@oruchanasar",
     site: "@routinest",
   },
