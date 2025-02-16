@@ -42,6 +42,8 @@ export default function Calendar() {
         }}
         datesSet={handleDatesSet}
         themeSystem="standard"
+        dayMaxEvents={3}
+        moreLinkClick="popover"
         dayCellClassNames={theme === "dark" ? "dark-theme-cell" : ""}
         viewClassNames={theme === "dark" ? "dark-theme-calendar" : ""}
       />
