@@ -1,41 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/PasswordInput";
+import { Alert } from "@/components/Alert";
+import { useLogin } from "@/hooks/useLogin";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    try {
-      const result = await signIn("credentials", {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        router.push("/");
-        router.refresh();
-      }
-    } catch (error) {
-      console.error("Login failed:", error);
-      setError("An unexpected error occurred");
-    }
-  };
+  const { formData, error, setFormData, handleSubmit } = useLogin();
 
   return (
     <div className="flex min-h-screen items-center justify-center">
@@ -44,11 +17,9 @@ export default function LoginPage() {
           <h2 className="text-2xl font-bold">Login</h2>
           <p className="text-gray-600">Welcome back!</p>
         </div>
-        {error && (
-          <div className="mb-4 p-2 text-red-500 bg-red-50 border border-red-200 rounded">
-            {error}
-          </div>
-        )}
+
+        {error && <Alert type="error" message={error} />}
+
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <Input
@@ -60,13 +31,12 @@ export default function LoginPage() {
               }
               autoComplete="email"
             />
-            <Input
-              type="password"
-              placeholder="Password"
+            <PasswordInput
               value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
+              onChange={(value) =>
+                setFormData({ ...formData, password: value })
               }
+              placeholder="Password"
               autoComplete="current-password"
             />
           </div>
