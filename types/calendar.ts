@@ -1,7 +1,6 @@
 export interface Routine {
   id: string;
   title: string;
-  createdAt: string;
   statuses: RoutineStatus[];
 }
 
@@ -20,7 +19,13 @@ export interface CalendarEvent {
   display: string;
 }
 
-export interface RoutineFromAPI {
+export interface RoutineFromAPI extends Routine {
+  createdAt: string;
+}
+
+export interface ExtensionRoutine {
   id: string;
+  text: string;
+  completed: boolean;
   createdAt: string;
 }

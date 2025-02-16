@@ -1,8 +1,5 @@
 import { useState } from "react";
-import {
-  getExtensionRoutines,
-  clearExtensionRoutines,
-} from "@/utils/extensionStorage";
+import { getExtensionRoutines, clearExtensionRoutines } from "@/lib/storage";
 
 interface SignupForm {
   email: string;

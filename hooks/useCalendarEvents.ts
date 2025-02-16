@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { CalendarEvent, Routine } from "@/types/calendar";
-import { fillMissingDates, convertRoutinesToEvents } from "@/utils/calendar";
+import { fillMissingDates, convertRoutinesToEvents } from "@/lib/calendar";
 
 export const useCalendarEvents = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);

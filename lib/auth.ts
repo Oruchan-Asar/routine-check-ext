@@ -3,6 +3,53 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 
+class AuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AuthError";
+  }
+}
+
+const validateCredentials = (
+  email?: string,
+  password?: string
+): { email: string; password: string } => {
+  if (!email || !password) {
+    throw new AuthError("Email and password are required");
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new AuthError("Invalid email format");
+  }
+
+  if (password.length < 8) {
+    throw new AuthError("Password must be at least 8 characters long");
+  }
+
+  return { email, password };
+};
+
+const authenticateUser = async (email: string, password: string) => {
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    throw new AuthError("Invalid credentials");
+  }
+
+  const passwordMatch = await bcrypt.compare(password, user.password);
+  if (!passwordMatch) {
+    throw new AuthError("Invalid credentials");
+  }
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+  };
+};
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -12,34 +59,18 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
+        try {
+          const { email, password } = validateCredentials(
+            credentials?.email,
+            credentials?.password
+          );
+          return await authenticateUser(email, password);
+        } catch (error) {
+          if (error instanceof AuthError) {
+            throw new Error(error.message);
+          }
+          throw new Error("Authentication failed");
         }
-
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        });
-
-        if (!user) {
-          return null;
-        }
-
-        const passwordMatch = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!passwordMatch) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
       },
     }),
   ],
