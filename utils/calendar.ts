@@ -93,9 +93,10 @@ export const convertRoutinesToEvents = (
   return routines.flatMap((routine) =>
     routine.statuses.map((status) => {
       const color = status.completed ? "#22c55e" : "#ef4444";
+      const completionStatus = status.completed ? "✓" : "⨯";
       return {
         id: status.id,
-        title: routine.title,
+        title: `${routine.title} ${completionStatus}`,
         date: status.date,
         backgroundColor: color,
         borderColor: color,
