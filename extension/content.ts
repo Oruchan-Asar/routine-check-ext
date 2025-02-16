@@ -27,7 +27,7 @@ window.addEventListener("message", async (event) => {
           }
         );
       });
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Failed to send message to background script:", error);
       // Check if error is an object with a message property
       if (error && typeof error === "object" && "message" in error) {
