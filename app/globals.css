@@ -70,3 +70,32 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Dark mode popover styles */
+.dark .fc-popover {
+  background-color: #1f2937 !important;
+  border: 1px solid #374151 !important;
+}
+
+.dark .fc-popover-header {
+  background-color: #374151 !important;
+  color: #fff !important;
+  border-bottom: 1px solid #4b5563 !important;
+}
+
+.dark .fc-popover-title {
+  color: #fff !important;
+}
+
+.dark .fc-popover-body {
+  color: #fff !important;
+}
+
+.dark .fc-popover .fc-event {
+  background-color: #374151 !important;
+  border: 1px solid #4b5563 !important;
+}
+
+.dark .fc-popover .fc-close {
+  color: #fff !important;
+}
