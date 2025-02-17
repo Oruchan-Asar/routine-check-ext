@@ -22,8 +22,8 @@ const validateCredentials = (
     throw new AuthError("Invalid email format");
   }
 
-  if (password.length < 8) {
-    throw new AuthError("Password must be at least 8 characters long");
+  if (password.length < 4) {
+    throw new AuthError("Password must be at least 4 characters long");
   }
 
   return { email, password };
