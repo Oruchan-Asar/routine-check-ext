@@ -32,6 +32,16 @@ const validateRoutines = (routines: ExtensionRoutine[]): void => {
 
 export async function getExtensionRoutines(): Promise<ExtensionRoutine[]> {
   try {
+    // Check if we're in a Chrome extension context
+    if (
+      typeof chrome === "undefined" ||
+      !chrome.storage ||
+      !chrome.storage.local
+    ) {
+      // Return empty array if not in extension context
+      return [];
+    }
+
     const result = await chrome.storage.local.get(["currentRoutines"]);
     const routines = result.currentRoutines || [];
     validateRoutines(routines);
@@ -52,6 +62,16 @@ export async function setExtensionRoutines(
   routines: ExtensionRoutine[]
 ): Promise<void> {
   try {
+    // Check if we're in a Chrome extension context
+    if (
+      typeof chrome === "undefined" ||
+      !chrome.storage ||
+      !chrome.storage.local
+    ) {
+      // No-op if not in extension context
+      return;
+    }
+
     validateRoutines(routines);
     await chrome.storage.local.set({ currentRoutines: routines });
   } catch (error) {
@@ -68,6 +88,16 @@ export async function setExtensionRoutines(
 
 export async function clearExtensionRoutines(): Promise<void> {
   try {
+    // Check if we're in a Chrome extension context
+    if (
+      typeof chrome === "undefined" ||
+      !chrome.storage ||
+      !chrome.storage.local
+    ) {
+      // No-op if not in extension context
+      return;
+    }
+
     await setExtensionRoutines([]);
   } catch (error) {
     throw new ExtensionStorageError(

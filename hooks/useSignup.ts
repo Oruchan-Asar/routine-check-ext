@@ -7,6 +7,14 @@ interface SignupForm {
   name: string;
 }
 
+interface ValidationError {
+  code: string;
+  validation?: string;
+  message: string;
+  path: string[];
+  minimum?: number;
+}
+
 interface SignupResult {
   formData: SignupForm;
   error: string;
@@ -44,7 +52,24 @@ export function useSignup(): SignupResult {
         await clearExtensionRoutines();
         window.location.href = "/login";
       } else {
-        setError(data.error || "Failed to sign up");
+        if (data.details && Array.isArray(data.details)) {
+          // Format validation errors into a readable message
+          const errorMessages = data.details.map((error: ValidationError) => {
+            if (
+              error.code === "invalid_string" &&
+              error.validation === "email"
+            ) {
+              return "Please enter a valid email address";
+            }
+            if (error.code === "too_small" && error.path[0] === "password") {
+              return `Password must be at least ${error.minimum} characters long`;
+            }
+            return error.message;
+          });
+          setError(errorMessages.join("\n"));
+        } else {
+          setError(data.error || "Failed to sign up");
+        }
       }
     } catch (error) {
       setError("An unexpected error occurred. Please try again.");
